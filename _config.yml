@@ -1,0 +1,43 @@
+title: velo's blog
+description: >-
+  this is where i blog about random stuff. you're free to (not) read it
+author: V3L0CT13S
+
+url: "https://v3l0c1t13s.github.io"
+baseurl: ""
+
+permalink: /:year/:month/:day/:title/
+timezone: Etc/UTC
+
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+feed:
+  path: /feed.xml
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+
+exclude:
+  - flake.nix
+  - flake.lock
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
+  - .direnv

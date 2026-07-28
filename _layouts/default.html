@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#05070f">
+  {%- seo -%}
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  {%- feed_meta -%}
+</head>
+<body>
+  <!-- Animated background: slow-drifting glowing lens shapes over near-black. -->
+  <div class="backdrop" aria-hidden="true">
+    <div class="lens lens--violet"></div>
+    <div class="lens lens--indigo"></div>
+    <div class="lens lens--azure"></div>
+    <div class="lens lens--cyan"></div>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+  </div>
+
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}">
+      <span class="brand__name">Home</span>
+    </a>
+    <nav class="site-nav">
+      <a href="{{ '/' | relative_url }}">Posts</a>
+      <a href="{{ '/about/' | relative_url }}">About</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+    </nav>
+  </header>
+
+  <main class="site-main">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; {{ site.time | date: '%Y' }} {{ site.author }}.</p>
+  </footer>
+</body>
+</html>

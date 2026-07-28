@@ -1,0 +1,35 @@
+---
+layout: default
+---
+<article class="post card">
+  <header class="post__header">
+    <p class="post__meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
+      {%- if page.tags and page.tags != empty %}
+      <span class="dot-sep"></span>
+      {%- for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor -%}
+      {%- endif %}
+    </p>
+    <h1 class="post__title">{{ page.title }}</h1>
+    {%- if page.excerpt_text %}<p class="post__lede">{{ page.excerpt_text }}</p>{% endif %}
+  </header>
+
+  <div class="prose">
+    {{ content }}
+  </div>
+</article>
+
+<nav class="pager">
+  {%- if page.previous %}
+  <a class="pager__link" href="{{ page.previous.url | relative_url }}">
+    <span class="pager__dir">← Previous</span>
+    <span class="pager__title">{{ page.previous.title }}</span>
+  </a>
+  {%- endif %}
+  {%- if page.next %}
+  <a class="pager__link pager__link--next" href="{{ page.next.url | relative_url }}">
+    <span class="pager__dir">Next →</span>
+    <span class="pager__title">{{ page.next.title }}</span>
+  </a>
+  {%- endif %}
+</nav>
