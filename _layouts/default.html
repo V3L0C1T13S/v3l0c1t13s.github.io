@@ -1,25 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ocean="open">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#010a12">
+  <meta name="theme-color" content="#04202f">
   {%- seo -%}
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
   {%- feed_meta -%}
+  <script>
+    // Set the depth before first paint, otherwise the default flashes on load.
+    try {
+      var d = localStorage.getItem('ocean');
+      if (d === 'open' || d === 'twilight') document.documentElement.dataset.ocean = d;
+    } catch (e) {}
+  </script>
 </head>
 <body>
-  <!-- Animated background: the ocean's twilight zone. Surface light fading into
-       the abyss, swaying light shafts, sinking marine snow, bioluminescence. -->
+  <!-- Animated background, in two depths. Both are built from the same idea —
+       layer the phenomena in the order light actually encounters them — but the
+       physics at 30 m and at 300 m are different enough to need different
+       layers, so each depth gets its own set and the other is display:none.
+
+       "open"     — open water, surface out of sight. Light arrives diffuse and
+                    near-parallel; scattering fills the frame and the floor
+                    settles to a dim teal rather than true black.
+       "twilight" — nearer the surface. Caustics and converging shafts, over a
+                    fast falloff into the dark. -->
   <div class="backdrop" aria-hidden="true">
     <div class="water"></div>
-    <div class="rays"></div>
+
+    <!-- ---- Shallow only ------------------------------------------------ -->
+
+    <!-- Caustics: two counter-drifting noise ridges, the interference of a
+         wind-chopped surface refracting sunlight. Strongest just below it. -->
+    <div class="depth depth--twilight">
+      <div class="caustics">
+        <div class="caustics__sheet caustics__sheet--a"></div>
+        <div class="caustics__sheet caustics__sheet--b"></div>
+      </div>
+
+      <!-- God rays: a striped plane laid back under perspective, so the shafts
+           converge on a vanishing point where the sun is. -->
+      <div class="rays">
+        <div class="rays__plane rays__plane--a"></div>
+        <div class="rays__plane rays__plane--b"></div>
+        <div class="rays__plane rays__plane--c"></div>
+      </div>
+    </div>
+
+    <!-- ---- Open water only --------------------------------------------- -->
+
+    <div class="depth depth--open">
+      <!-- Shafts from a surface too far above to resolve: near-parallel, soft,
+           and low-contrast rather than converging on a visible sun. -->
+      <div class="columns">
+        <div class="columns__set columns__set--a"></div>
+        <div class="columns__set columns__set--b"></div>
+      </div>
+    </div>
+
+    <!-- ---- Both -------------------------------------------------------- -->
+
     <div class="bloom bloom--teal"></div>
     <div class="bloom bloom--azure"></div>
     <div class="bloom bloom--deep"></div>
-    <div class="snow snow--far"></div>
-    <div class="snow snow--mid"></div>
-    <div class="snow snow--near"></div>
+
+    <!-- Marine snow. Outer element sways with the current, inner sinks; the two
+         compose into the drifting, non-vertical fall real particles have. -->
+    <div class="snow snow--far"><div class="snow__field"></div></div>
+    <div class="snow snow--mid"><div class="snow__field"></div></div>
+    <div class="snow snow--near"><div class="snow__field"></div></div>
+
+    <div class="haze"></div>
     <div class="vignette"></div>
     <div class="grain"></div>
   </div>
@@ -32,6 +84,10 @@
       <a href="{{ '/' | relative_url }}">Posts</a>
       <a href="{{ '/about/' | relative_url }}">About</a>
       <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+      <button class="depth-toggle" type="button" aria-pressed="false">
+        <span class="depth-toggle__gauge" aria-hidden="true"><i></i></span>
+        <span class="depth-toggle__label">Open water</span>
+      </button>
     </nav>
   </header>
 
@@ -42,5 +98,32 @@
   <footer class="site-footer">
     <p>&copy; {{ site.time | date: '%Y' }} {{ site.author }}.</p>
   </footer>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.querySelector('.depth-toggle');
+      var label = btn.querySelector('.depth-toggle__label');
+      var meta = document.querySelector('meta[name=theme-color]');
+
+      function paint() {
+        var shallow = root.dataset.ocean === 'twilight';
+        label.textContent = shallow ? 'Twilight zone' : 'Open water';
+        btn.setAttribute('aria-pressed', String(shallow));
+        btn.setAttribute('aria-label',
+          'Depth: ' + label.textContent + '. Switch to ' +
+          (shallow ? 'open water' : 'the twilight zone') + '.');
+        if (meta) meta.content = shallow ? '#010a12' : '#04202f';
+      }
+
+      btn.addEventListener('click', function () {
+        root.dataset.ocean = root.dataset.ocean === 'twilight' ? 'open' : 'twilight';
+        try { localStorage.setItem('ocean', root.dataset.ocean); } catch (e) {}
+        paint();
+      });
+
+      paint();
+    })();
+  </script>
 </body>
 </html>

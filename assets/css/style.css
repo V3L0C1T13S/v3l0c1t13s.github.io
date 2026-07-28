@@ -61,35 +61,380 @@ body {
   background: var(--abyss);
 }
 
-/* Depth gradient: dim blue-green at the surface, black below.
+/* Each depth's phenomena live in their own subtree; only one is mounted at a
+   time, so the inactive set costs nothing to composite. */
+.depth { position: absolute; inset: 0; }
+[data-ocean="open"]     .depth--twilight { display: none; }
+[data-ocean="twilight"] .depth--open     { display: none; }
+
+/* Depth gradient. Water absorbs red first, then green, so the column runs
+   green-cyan at the top, through cyan and cobalt, to a blue-black floor — the
+   stops below trace roughly exponential attenuation rather than a linear fade,
+   which is why the light dies quickly near the top and slowly further down.
    Fixed to the viewport, so scrolling never "leaves" the water column. */
-.water {
-  position: absolute;
-  inset: 0;
+.water { position: absolute; inset: 0; }
+
+[data-ocean="twilight"] .water {
   background:
-    radial-gradient(130% 70% at 50% -20%, rgba(52, 150, 190, 0.34) 0%, rgba(16, 70, 110, 0.16) 38%, transparent 70%),
-    linear-gradient(180deg, #0a2c42 0%, #062033 22%, #03121f 52%, #010a12 78%, var(--abyss) 100%);
+    /* The sun's disc, diffused by the surface. Sits off-centre so the god-ray
+       vanishing point below has something to belong to. */
+    radial-gradient(46% 26% at 62% -8%, rgba(196, 246, 255, 0.30) 0%, rgba(96, 196, 226, 0.16) 40%, transparent 78%),
+    radial-gradient(150% 62% at 62% -14%, rgba(52, 158, 186, 0.30) 0%, rgba(18, 78, 116, 0.14) 42%, transparent 74%),
+    linear-gradient(180deg,
+      #12475c  0%,
+      #0c3550  9%,
+      #082a45  19%,
+      #05203a  31%,
+      #03172c  44%,
+      #02101f  58%,
+      #010a15  72%,
+      #00060d  86%,
+      var(--abyss) 100%);
 }
 
-/* Light shafts from the surface, swaying like they're refracted through swell. */
+/* ---- Caustics -------------------------------------------------------------
+   Refraction through a chopped surface focuses sunlight into a shifting mesh of
+   bright filaments. Two independently drifting noise sheets screened together
+   approximate the interference; neither loops in step with the other, so the
+   pattern never visibly repeats. Only the top third of the column gets them —
+   below that the surface is too far away to focus anything. */
+.caustics {
+  position: absolute;
+  inset: -6% -15% auto -15%;
+  height: 58%;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0.26;
+  /* The mesh lives on the underside of the surface, which is above you and
+     receding — so it gets the same perspective treatment as the shafts. Cells
+     open up toward the bottom of the band (near) and compress to nothing at the
+     top (far). Flat-on, it reads as wallpaper; laid back, it reads as water. */
+  perspective: 300px;
+  perspective-origin: 62% 100%;
+  /* Peak brightness sits below the header rather than at the very top: at the
+     surface itself you'd be looking through too little water to see the mesh
+     resolve, and it keeps the nav legible. */
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, #000 16%, rgba(0,0,0,0.5) 40%, transparent 72%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, #000 16%, rgba(0,0,0,0.5) 40%, transparent 72%);
+}
+
+.caustics__sheet {
+  position: absolute;
+  left: -50%; bottom: 0;
+  width: 200%; height: 260%;
+  background-repeat: repeat;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+/* fractalNoise pushed through a ridged transfer curve: the table peaks in the
+   middle of the range, so mid-tones of the noise become bright thin lines and
+   both extremes go transparent — a caustic web rather than a cloud. */
+.caustics__sheet--a {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='700' height='700'><filter id='c' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='0.021 0.028' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.78  0 0 0 0 0.97  0 0 0 0 1  1 0 0 0 0'/><feComponentTransfer><feFuncA type='table' tableValues='0 0 0 0.1 1 0.1 0 0 0'/></feComponentTransfer></filter><rect width='700' height='700' filter='url(%23c)'/></svg>");
+  background-size: 700px 700px;
+  opacity: 0.8;
+  filter: blur(0.8px);
+  transform: rotateX(-74deg);
+  animation: caustic-drift-a 41s linear infinite;
+}
+
+.caustics__sheet--b {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='560' height='560'><filter id='c' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='0.032 0.041' numOctaves='2' seed='29' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.62  0 0 0 0 0.94  0 0 0 0 0.99  1 0 0 0 0'/><feComponentTransfer><feFuncA type='table' tableValues='0 0 0 0.85 0.1 0 0'/></feComponentTransfer></filter><rect width='560' height='560' filter='url(%23c)'/></svg>");
+  background-size: 560px 560px;
+  opacity: 0.5;
+  filter: blur(1.6px);
+  transform: rotateX(-72deg);
+  animation: caustic-drift-b 29s linear infinite;
+}
+
+/* ---- Crepuscular rays -----------------------------------------------------
+   Real shafts are parallel in space; they only look like they fan because they
+   recede from the viewer. So: a striped plane laid back under perspective. The
+   stripes then genuinely converge on a vanishing point, which is placed at the
+   sun, and they widen as they come down toward the camera — the geometry does
+   the work instead of a hand-faked gradient. */
 .rays {
   position: absolute;
-  top: -20%; left: -30%;
-  width: 160%; height: 105%;
+  inset: 0;
+  overflow: hidden;
   mix-blend-mode: screen;
-  opacity: 0.5;
-  background: repeating-linear-gradient(97deg,
-    transparent 0px,
-    rgba(122, 204, 235, 0.085) 2px,
-    rgba(150, 225, 245, 0.13) 7px,
-    transparent 16px,
-    transparent 78px);
-  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.45) 32%, transparent 72%);
-          mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.45) 32%, transparent 72%);
-  filter: blur(7px);
-  transform-origin: 50% 0;
-  animation: sway 26s ease-in-out infinite;
+  perspective: 460px;
+  perspective-origin: 62% 0%;
+  -webkit-mask-image:
+    linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.75) 20%, rgba(0,0,0,0.34) 48%, transparent 78%),
+    linear-gradient(90deg, transparent 0%, #000 24%, #000 82%, transparent 100%);
+          mask-image:
+    linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.75) 20%, rgba(0,0,0,0.34) 48%, transparent 78%),
+    linear-gradient(90deg, transparent 0%, #000 24%, #000 82%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+}
+
+.rays__plane {
+  position: absolute;
+  top: 0; left: -60%;
+  width: 220%; height: 190%;
+  transform-origin: 50% 0%;
+  transform: rotateX(72deg);
   will-change: transform, opacity;
+}
+
+/* Three planes at slightly different tilts and periods. Shafts in water shimmer
+   independently as separate patches of swell pass overhead, so nothing here is
+   allowed to breathe in unison. */
+.rays__plane--a {
+  background: repeating-linear-gradient(90deg,
+    transparent 0px,
+    rgba(150, 226, 250, 0.10) 6px,
+    rgba(196, 244, 255, 0.16) 16px,
+    rgba(150, 226, 250, 0.09) 27px,
+    transparent 40px,
+    transparent 132px);
+  filter: blur(5px);
+  animation: shaft-a 23s ease-in-out infinite;
+}
+
+.rays__plane--b {
+  background: repeating-linear-gradient(90deg,
+    transparent 0px,
+    rgba(126, 208, 240, 0.08) 10px,
+    rgba(178, 236, 252, 0.12) 22px,
+    transparent 44px,
+    transparent 205px);
+  filter: blur(9px);
+  animation: shaft-b 34s ease-in-out infinite;
+}
+
+/* The narrow, hard-edged one — the shaft that happens to be aimed at you. */
+.rays__plane--c {
+  background: repeating-linear-gradient(90deg,
+    transparent 0px,
+    rgba(214, 250, 255, 0.14) 4px,
+    transparent 11px,
+    transparent 340px);
+  filter: blur(2.5px);
+  animation: shaft-c 17s ease-in-out infinite;
+}
+
+/* ============================================================
+   Open water — surface out of sight, light still arriving
+   ============================================================ */
+
+/* The defining difference from the shallow view is what happens at the bottom
+   of the frame: it does *not* go black. Scattering is a source as well as a
+   sink — every metre of water between you and the dark is itself lit and
+   throwing light back at you, so distance washes toward a flat mid-blue veil
+   long before it reaches zero. The gradient below therefore compresses into a
+   narrow band of blues and never leaves them, which is why it reads as "far"
+   rather than "deep". */
+[data-ocean="open"] .water {
+  background:
+    /* No sun disc — at this depth the surface is too far and too diffused to
+       have a position. The light is just "up", spread across the whole top. */
+    radial-gradient(150% 80% at 50% -30%, rgba(126, 214, 236, 0.24) 0%, rgba(56, 148, 186, 0.13) 42%, transparent 78%),
+    linear-gradient(180deg,
+      #0d5878  0%,
+      #0a4a68  14%,
+      #08405c  28%,
+      #073650  42%,
+      #062c43  57%,
+      #052437  72%,
+      #041d2d  86%,
+      #031825 100%);
+}
+
+/* ---- Diffuse columns ------------------------------------------------------
+   Shafts still exist this far down, but everything that made them legible up
+   top is gone: no vanishing point (the sun is unresolvable), no hard edges
+   (scattering has smeared them across tens of metres). What survives is broad,
+   near-parallel, low-contrast vertical banding — which is why these are plain
+   vertical gradients with heavy blur rather than the perspective plane the
+   shallow view uses. */
+.columns {
+  position: absolute;
+  inset: -5% -10%;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.72) 38%, rgba(0,0,0,0.28) 68%, transparent 92%);
+          mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.72) 38%, rgba(0,0,0,0.28) 68%, transparent 92%);
+}
+
+.columns__set {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+
+/* Irregular widths and spacing. Evenly spaced bands read as a CSS gradient;
+   real light through swell is clumped. */
+.columns__set--a {
+  background: repeating-linear-gradient(93deg,
+    transparent 0px,
+    rgba(160, 226, 248, 0.16) 18px,
+    rgba(200, 244, 255, 0.26) 52px,
+    rgba(160, 226, 248, 0.14) 88px,
+    transparent 120px,
+    transparent 168px,
+    rgba(178, 234, 250, 0.19) 196px,
+    transparent 250px,
+    transparent 310px);
+  filter: blur(13px);
+  animation: column-a 38s ease-in-out infinite;
+}
+
+.columns__set--b {
+  background: repeating-linear-gradient(87deg,
+    transparent 0px,
+    rgba(208, 246, 255, 0.2) 10px,
+    transparent 40px,
+    transparent 118px,
+    rgba(170, 232, 250, 0.14) 140px,
+    transparent 196px,
+    transparent 244px);
+  filter: blur(7px);
+  animation: column-b 27s ease-in-out infinite;
+}
+
+/* ---- Bubble plumes --------------------------------------------------------
+   Rising, not falling — the one element that unambiguously fixes which way is
+   up when there's no surface in frame to do it. Each bubble is drawn as a
+   *ring*, not a disc: a gas bubble is a lens, so it's dark in the middle where
+   it refracts the background through and bright at the rim where it catches a
+   glancing highlight. That reads as a bubble; a filled dot reads as a speck.
+
+   The stream translates up one tile per cycle (seamless), while the parent
+   wobbles it sideways — plumes are unstable and never rise in a straight line. */
+.plume {
+  position: absolute;
+  bottom: -12%;
+  height: 118%;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  will-change: transform;
+  /* Fade in from the bottom and out toward the top: bubbles enter frame from a
+     source below and dissolve into the haze before reaching any surface. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 2%, rgba(0,0,0,0.5) 22%, #000 62%, #000 88%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 2%, rgba(0,0,0,0.5) 22%, #000 62%, #000 88%, transparent 100%);
+}
+.plume__stream {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.plume--1 { left: 12%;  width: 96px;  opacity: 0.9;  filter: blur(0.6px); animation: plume-wobble-a 13s ease-in-out infinite; }
+.plume--2 { left: 27%;  width: 64px;  opacity: 0.6;  filter: blur(1.8px); animation: plume-wobble-b 17s ease-in-out infinite; }
+.plume--3 { left: 58%;  width: 120px; opacity: 0.78; filter: blur(1px);   animation: plume-wobble-c 15s ease-in-out infinite; }
+.plume--4 { left: 79%;  width: 78px;  opacity: 0.45; filter: blur(2.6px); animation: plume-wobble-b 21s ease-in-out infinite; }
+
+/* Rings at irregular offsets within the tile — a plume is a broken string of
+   bubbles, not a dotted line. */
+.plume--1 .plume__stream {
+  background-image:
+    radial-gradient(circle at 24px 14px,  transparent 0 1.2px, rgba(206, 242, 255, 0.6) 1.4px 1.9px, transparent 2.2px),
+    radial-gradient(circle at 58px 38px,  transparent 0 0.8px, rgba(226, 248, 255, 0.55) 1px 1.4px, transparent 1.7px),
+    radial-gradient(circle at 36px 62px,  transparent 0 1.5px, rgba(196, 238, 255, 0.5) 1.8px 2.4px, transparent 2.7px),
+    radial-gradient(circle at 70px 88px,  transparent 0 0.9px, rgba(232, 250, 255, 0.58) 1.1px 1.5px, transparent 1.8px),
+    radial-gradient(circle at 16px 108px, transparent 0 1.3px, rgba(210, 244, 255, 0.45) 1.5px 2px, transparent 2.3px),
+    radial-gradient(circle at 48px 132px, transparent 0 1px,   rgba(222, 247, 255, 0.5) 1.2px 1.6px, transparent 1.9px),
+    radial-gradient(circle at 80px 158px, transparent 0 1.4px, rgba(202, 240, 255, 0.42) 1.7px 2.2px, transparent 2.5px),
+    radial-gradient(circle at 30px 182px, transparent 0 0.7px, rgba(236, 252, 255, 0.52) 0.9px 1.3px, transparent 1.6px);
+  background-size: 96px 200px;
+  animation: rise 9s linear infinite;
+}
+.plume--2 .plume__stream {
+  background-image:
+    radial-gradient(circle at 20px 20px,  transparent 0 0.9px, rgba(216, 246, 255, 0.55) 1.1px 1.5px, transparent 1.8px),
+    radial-gradient(circle at 44px 52px,  transparent 0 1.2px, rgba(200, 240, 255, 0.48) 1.4px 1.9px, transparent 2.2px),
+    radial-gradient(circle at 28px 84px,  transparent 0 0.7px, rgba(230, 250, 255, 0.52) 0.9px 1.3px, transparent 1.6px),
+    radial-gradient(circle at 52px 118px, transparent 0 1.1px, rgba(212, 244, 255, 0.44) 1.3px 1.8px, transparent 2.1px),
+    radial-gradient(circle at 14px 148px, transparent 0 0.8px, rgba(234, 251, 255, 0.5) 1px 1.4px, transparent 1.7px);
+  background-size: 64px 172px;
+  animation: rise-2 13s linear infinite;
+}
+.plume--3 .plume__stream {
+  background-image:
+    radial-gradient(circle at 30px 16px,   transparent 0 1.6px, rgba(202, 240, 255, 0.55) 1.9px 2.5px, transparent 2.9px),
+    radial-gradient(circle at 84px 42px,   transparent 0 1px,   rgba(224, 248, 255, 0.5) 1.2px 1.7px, transparent 2px),
+    radial-gradient(circle at 52px 70px,   transparent 0 1.3px, rgba(208, 242, 255, 0.46) 1.5px 2.1px, transparent 2.4px),
+    radial-gradient(circle at 100px 96px,  transparent 0 0.9px, rgba(234, 251, 255, 0.54) 1.1px 1.5px, transparent 1.8px),
+    radial-gradient(circle at 18px 124px,  transparent 0 1.5px, rgba(198, 238, 255, 0.42) 1.8px 2.3px, transparent 2.7px),
+    radial-gradient(circle at 66px 152px,  transparent 0 1.1px, rgba(220, 246, 255, 0.5) 1.3px 1.8px, transparent 2.1px),
+    radial-gradient(circle at 110px 180px, transparent 0 0.8px, rgba(238, 252, 255, 0.46) 1px 1.4px, transparent 1.7px),
+    radial-gradient(circle at 40px 208px,  transparent 0 1.4px, rgba(206, 241, 255, 0.4) 1.6px 2.2px, transparent 2.5px);
+  background-size: 120px 236px;
+  animation: rise-3 11s linear infinite;
+}
+.plume--4 .plume__stream {
+  background-image:
+    radial-gradient(circle at 26px 26px,  transparent 0 1.1px, rgba(214, 245, 255, 0.48) 1.3px 1.8px, transparent 2.1px),
+    radial-gradient(circle at 54px 62px,  transparent 0 0.8px, rgba(228, 249, 255, 0.46) 1px 1.4px, transparent 1.7px),
+    radial-gradient(circle at 34px 98px,  transparent 0 1.3px, rgba(204, 241, 255, 0.4) 1.5px 2px, transparent 2.3px),
+    radial-gradient(circle at 64px 136px, transparent 0 0.9px, rgba(232, 250, 255, 0.44) 1.1px 1.5px, transparent 1.8px);
+  /* Tile height must match plume--2's — they share the rise-2 keyframe, which
+     translates by exactly one tile. */
+  background-size: 78px 172px;
+  animation: rise-2 16s linear infinite;
+}
+
+/* ---- The school -----------------------------------------------------------
+   Baitfish holding station in the mid-water. Almost entirely silhouette: they
+   are between you and the only light source, so you get their outline dark
+   against the haze, with the occasional flank turning and catching a highlight.
+   Hence dark ellipses with a few bright ones mixed in, at normal blend rather
+   than screen — these subtract light rather than adding it, which is what makes
+   them read as objects instead of glints. */
+.school {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  /* Confined to a band: schools have edges, and a speck field spread evenly to
+     the frame corners reads as noise. Sat off to the right of the centred
+     content column, otherwise the whole school hides behind the cards. */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 2%, #000 20%, #000 62%, transparent 88%),
+    radial-gradient(62% 70% at 82% 38%, #000 26%, transparent 84%);
+          mask-image:
+    linear-gradient(180deg, transparent 2%, #000 20%, #000 62%, transparent 88%),
+    radial-gradient(62% 70% at 82% 38%, #000 26%, transparent 84%);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+}
+.school__band {
+  position: absolute;
+  inset: -10% -20%;
+  will-change: transform;
+}
+
+.school--far  { opacity: 0.55; animation: school-hover-a 34s ease-in-out infinite; }
+.school--near { opacity: 0.6;  animation: school-hover-b 23s ease-in-out infinite; }
+
+.school--far .school__band {
+  background-image:
+    radial-gradient(3.6px 1.7px at 40px 30px,   rgba(2, 17, 28, 0.92), transparent),
+    radial-gradient(3px 1.4px at 128px 76px,    rgba(3, 20, 31, 0.88), transparent),
+    radial-gradient(4.2px 1.9px at 76px 142px,  rgba(1, 15, 26, 0.9), transparent),
+    radial-gradient(2.8px 1.3px at 190px 112px, rgba(4, 22, 33, 0.8), transparent),
+    radial-gradient(3.4px 1.6px at 156px 196px, rgba(2, 18, 29, 0.85), transparent),
+    radial-gradient(2.4px 1.1px at 24px 208px,  rgba(170, 232, 250, 0.5), transparent),
+    radial-gradient(3.8px 1.7px at 214px 34px,  rgba(2, 17, 28, 0.78), transparent),
+    radial-gradient(2.6px 1.2px at 96px 96px,   rgba(3, 20, 31, 0.7), transparent);
+  background-size: 240px 240px;
+  filter: blur(0.4px);
+  animation: school-drift-a 58s linear infinite;
+}
+.school--near .school__band {
+  background-image:
+    radial-gradient(6px 2.7px at 60px 50px,     rgba(1, 13, 23, 0.9), transparent),
+    radial-gradient(5px 2.3px at 178px 130px,   rgba(2, 17, 27, 0.86), transparent),
+    radial-gradient(6.6px 3px at 108px 244px,   rgba(1, 12, 22, 0.8), transparent),
+    radial-gradient(4px 1.8px at 268px 190px,   rgba(184, 238, 253, 0.45), transparent),
+    radial-gradient(5.6px 2.5px at 232px 66px,  rgba(2, 15, 25, 0.76), transparent),
+    radial-gradient(4.4px 2px at 32px 168px,    rgba(2, 17, 27, 0.7), transparent);
+  background-size: 330px 330px;
+  filter: blur(1.1px);
+  animation: school-drift-b 42s linear infinite;
 }
 
 /* Distant bioluminescent blooms — slow, dim, never quite in focus. */
@@ -136,52 +481,123 @@ body {
   animation: current-c 104s ease-in-out infinite;
 }
 
-/* Marine snow: three parallax layers of specks sinking through the frame.
-   Each layer tiles, and each drops exactly one tile height per cycle, so the
-   loop is seamless. */
+/* ---- Marine snow ----------------------------------------------------------
+   Aggregate detritus falling out of the productive layer above. Three parallax
+   depths: distant flecks are small, dim and slow; the near layer is large,
+   out of focus (it's inside the lens's near limit) and fast. Each field tiles
+   and drops exactly one tile height per cycle, so the loop is seamless, while
+   the parent sways it sideways on a different period — the sum reads as
+   particles caught in a current rather than rain.
+
+   Each layer is masked to fade near the top: particles are only visible where
+   there's light left to scatter off them. */
 .snow {
   position: absolute;
-  inset: -30% -10%;
+  inset: -30% -12%;
   mix-blend-mode: screen;
+  will-change: transform;
+}
+.snow__field {
+  position: absolute;
+  inset: 0;
   will-change: transform;
 }
 
 .snow--far {
-  opacity: 0.34;
+  opacity: 0.42;
+  animation: drift-far 37s ease-in-out infinite;
+  -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 22%, #000 68%, rgba(0,0,0,0.3) 90%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 4%, #000 22%, #000 68%, rgba(0,0,0,0.3) 90%, transparent 100%);
+}
+.snow--far .snow__field {
   background-image:
-    radial-gradient(1px 1px at 22px 34px,  rgba(190, 235, 240, 0.85), transparent),
-    radial-gradient(1px 1px at 118px 92px, rgba(150, 215, 230, 0.7), transparent),
-    radial-gradient(1px 1px at 63px 148px, rgba(180, 240, 225, 0.6), transparent),
-    radial-gradient(1px 1px at 165px 12px, rgba(140, 205, 225, 0.6), transparent);
+    radial-gradient(1px 1px at 22px 34px,   rgba(190, 235, 240, 0.85), transparent),
+    radial-gradient(1px 1px at 118px 92px,  rgba(150, 215, 230, 0.7), transparent),
+    radial-gradient(1px 1px at 63px 148px,  rgba(180, 240, 225, 0.6), transparent),
+    radial-gradient(1px 1px at 165px 12px,  rgba(140, 205, 225, 0.6), transparent),
+    radial-gradient(1px 1px at 140px 170px, rgba(170, 220, 235, 0.5), transparent);
   background-size: 190px 190px;
-  animation: sink-far 46s linear infinite;
+  filter: blur(0.35px);
+  animation: sink-far 74s linear infinite;
 }
 
 .snow--mid {
-  opacity: 0.42;
+  opacity: 0.55;
+  animation: drift-mid 26s ease-in-out infinite;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 16%, #000 66%, rgba(0,0,0,0.2) 88%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 16%, #000 66%, rgba(0,0,0,0.2) 88%, transparent 100%);
+}
+.snow--mid .snow__field {
   background-image:
-    radial-gradient(1.6px 1.6px at 46px 18px,  rgba(205, 245, 245, 0.9), transparent),
-    radial-gradient(1.4px 1.4px at 152px 118px, rgba(120, 245, 207, 0.55), transparent),
-    radial-gradient(1.6px 1.6px at 92px 206px,  rgba(190, 235, 245, 0.75), transparent);
+    radial-gradient(1.6px 1.6px at 46px 18px,   rgba(205, 245, 245, 0.9), transparent),
+    radial-gradient(1.3px 1.3px at 152px 118px, rgba(120, 245, 207, 0.5), transparent),
+    radial-gradient(1.7px 1.7px at 92px 206px,  rgba(190, 235, 245, 0.75), transparent),
+    radial-gradient(1.2px 1.2px at 214px 62px,  rgba(175, 225, 240, 0.6), transparent);
   background-size: 260px 260px;
-  animation: sink-mid 34s linear infinite;
+  animation: sink-mid 52s linear infinite;
 }
 
+/* Near field: big, soft, and quick past the frame. Blur is doing depth-of-field
+   here — it's what sells the other two layers as being far away. */
 .snow--near {
-  opacity: 0.3;
+  opacity: 0.34;
+  animation: drift-near 19s ease-in-out infinite;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 70%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 70%, transparent 100%);
+}
+.snow--near .snow__field {
   background-image:
-    radial-gradient(2.6px 2.6px at 70px 60px,   rgba(215, 250, 250, 0.85), transparent),
-    radial-gradient(2.2px 2.2px at 268px 220px, rgba(120, 245, 207, 0.5), transparent);
+    radial-gradient(3px 3px at 70px 60px,     rgba(215, 250, 250, 0.8), transparent),
+    radial-gradient(2.2px 2.2px at 268px 220px, rgba(120, 245, 207, 0.45), transparent),
+    radial-gradient(2.6px 2.6px at 160px 330px, rgba(200, 240, 250, 0.55), transparent);
   background-size: 340px 340px;
-  filter: blur(0.6px);
-  animation: sink-near 22s linear infinite;
+  filter: blur(1.6px);
+  animation: sink-near 33s linear infinite;
+}
+
+/* ---- Scattering haze ------------------------------------------------------
+   Suspended particulate scatters light back toward the viewer, so contrast
+   falls off with distance and the deep end never reaches true black in a
+   straight line — it washes toward a flat blue-grey first. This is the layer
+   that stops the gradient reading as "dark CSS" and starts it reading as
+   "water". */
+.haze {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  animation: haze-breathe 47s ease-in-out infinite;
+  will-change: opacity;
+}
+
+[data-ocean="twilight"] .haze {
+  background:
+    linear-gradient(180deg, rgba(96, 178, 208, 0.09) 0%, rgba(46, 116, 156, 0.05) 26%, transparent 58%),
+    radial-gradient(120% 58% at 62% 0%, rgba(120, 200, 226, 0.10) 0%, transparent 62%);
+}
+
+/* Out here the haze is the subject, not a finishing pass. It covers the whole
+   frame instead of fading out halfway down, because there is no "beyond the
+   haze" to see — every direction you look terminates in it. This is the layer
+   that flattens contrast enough for the school and the far plumes to sit at the
+   right apparent distance. */
+[data-ocean="open"] .haze {
+  background:
+    linear-gradient(180deg, rgba(120, 202, 230, 0.13) 0%, rgba(74, 158, 196, 0.10) 34%, rgba(46, 116, 156, 0.07) 70%, rgba(34, 92, 128, 0.05) 100%),
+    radial-gradient(130% 70% at 50% -6%, rgba(150, 220, 242, 0.12) 0%, transparent 66%);
 }
 
 /* Pressure closing in at the edges. */
-.vignette {
-  position: absolute;
-  inset: 0;
+.vignette { position: absolute; inset: 0; }
+
+[data-ocean="twilight"] .vignette {
   background: radial-gradient(115% 80% at 50% 30%, transparent 38%, rgba(0, 5, 8, 0.6) 76%, rgba(0, 5, 8, 0.95) 100%);
+}
+
+/* Much weaker, and tinted rather than black — a hard dark vignette would undo
+   the whole point of the open-water look, which is that nothing in frame is
+   ever fully unlit. It only needs to be strong enough to settle the corners. */
+[data-ocean="open"] .vignette {
+  background: radial-gradient(120% 88% at 50% 26%, transparent 44%, rgba(2, 20, 34, 0.36) 80%, rgba(1, 14, 25, 0.62) 100%);
 }
 
 /* Fine grain — kills banding on the long, dark depth ramp. */
@@ -194,9 +610,86 @@ body {
   animation: grain-shift 6s steps(6) infinite;
 }
 
-@keyframes sway {
-  0%, 100% { transform: skewX(-3deg) translate3d(-1.5%, 0, 0); opacity: 0.42; }
-  50%      { transform: skewX(4deg)  translate3d(2.5%, 0, 0);  opacity: 0.6; }
+/* Caustic sheets travel at different speeds and angles; where they cross, the
+   web brightens and reorganises. Each translates by exactly one tile so the
+   scroll is seamless. */
+/* rotateX comes first so the translate that follows happens *in the plane of the
+   surface* — the drift runs along the water, not across the screen. Each sheet
+   still moves exactly one tile per cycle, so the scroll stays seamless. */
+@keyframes caustic-drift-a {
+  from { transform: rotateX(-74deg) translate3d(0, 0, 0); }
+  to   { transform: rotateX(-74deg) translate3d(-700px, 700px, 0); }
+}
+@keyframes caustic-drift-b {
+  from { transform: rotateX(-72deg) translate3d(0, 0, 0); }
+  to   { transform: rotateX(-72deg) translate3d(560px, 560px, 0); }
+}
+
+/* Shafts: laid back under perspective so the stripes converge on the sun. The
+   small rotateZ and horizontal slide are the swell moving overhead. */
+@keyframes shaft-a {
+  0%, 100% { transform: rotateX(72deg) rotateZ(-1.6deg) translate3d(-2%, 0, 0); opacity: 0.62; }
+  50%      { transform: rotateX(72deg) rotateZ(1.4deg)  translate3d(3%, 0, 0);  opacity: 0.95; }
+}
+@keyframes shaft-b {
+  0%, 100% { transform: rotateX(70deg) rotateZ(2.2deg)  translate3d(2%, 0, 0);  opacity: 0.8; }
+  50%      { transform: rotateX(70deg) rotateZ(-1.2deg) translate3d(-3.5%, 0, 0); opacity: 0.45; }
+}
+@keyframes shaft-c {
+  0%, 100% { transform: rotateX(74deg) rotateZ(0.6deg)  translate3d(0, 0, 0);    opacity: 0.25; }
+  38%      { transform: rotateX(74deg) rotateZ(-0.8deg) translate3d(-1.5%, 0, 0); opacity: 0.9; }
+  70%      { transform: rotateX(74deg) rotateZ(0.3deg)  translate3d(1%, 0, 0);   opacity: 0.4; }
+}
+
+@keyframes haze-breathe {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* Open water: the columns slide and fade rather than pivot — with no visible
+   sun there's no vanishing point for them to rotate about. */
+@keyframes column-a {
+  0%, 100% { transform: translate3d(-2%, 0, 0) scaleX(1);    opacity: 0.7; }
+  50%      { transform: translate3d(3%, 0, 0)  scaleX(1.06); opacity: 1; }
+}
+@keyframes column-b {
+  0%, 100% { transform: translate3d(2.5%, 0, 0) scaleX(1.04); opacity: 0.9; }
+  50%      { transform: translate3d(-2%, 0, 0)  scaleX(1);    opacity: 0.5; }
+}
+
+/* Bubbles rise exactly one tile per cycle, so the stream is seamless. */
+@keyframes rise   { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -200px, 0); } }
+@keyframes rise-2 { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -172px, 0); } }
+@keyframes rise-3 { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -236px, 0); } }
+
+/* A plume is unstable — it meanders as it climbs, and each one meanders on its
+   own schedule. The slight scale is the plume widening as bubbles expand. */
+@keyframes plume-wobble-a {
+  0%, 100% { transform: translate3d(-14px, 0, 0) scaleX(1); }
+  33%      { transform: translate3d(10px, 0, 0)  scaleX(1.12); }
+  66%      { transform: translate3d(6px, 0, 0)   scaleX(0.94); }
+}
+@keyframes plume-wobble-b {
+  0%, 100% { transform: translate3d(9px, 0, 0)   scaleX(1.06); }
+  50%      { transform: translate3d(-11px, 0, 0) scaleX(0.96); }
+}
+@keyframes plume-wobble-c {
+  0%, 100% { transform: translate3d(8px, 0, 0)   scaleX(0.97); }
+  40%      { transform: translate3d(-13px, 0, 0) scaleX(1.1); }
+  75%      { transform: translate3d(4px, 0, 0)   scaleX(1.02); }
+}
+
+/* The school tracks slowly across frame (one tile per cycle, seamless) while
+   the whole body rolls — schools mill rather than translate cleanly. */
+@keyframes school-drift-a { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-240px, 0, 0); } }
+@keyframes school-drift-b { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-330px, 0, 0); } }
+@keyframes school-hover-a {
+  0%, 100% { transform: translate3d(0, -1.2%, 0); opacity: 0.45; }
+  50%      { transform: translate3d(0, 1.6%, 0);  opacity: 0.68; }
+}
+@keyframes school-hover-b {
+  0%, 100% { transform: translate3d(0, 1.4%, 0);  opacity: 0.66; }
+  50%      { transform: translate3d(0, -1.8%, 0); opacity: 0.44; }
 }
 @keyframes current-a {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1);    opacity: 0.85; }
@@ -210,9 +703,15 @@ body {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1);    opacity: 0.7; }
   50%      { transform: translate3d(4vmax, -3vmax, 0) scale(1.1);  opacity: 1; }
 }
-@keyframes sink-far  { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(-190px, 190px, 0); } }
-@keyframes sink-mid  { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(260px, 260px, 0); } }
-@keyframes sink-near { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(-340px, 340px, 0); } }
+/* Sinking is pure vertical and exactly one tile per cycle — the lateral motion
+   comes from the parent's drift, which is on an unrelated period. */
+@keyframes sink-far  { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 190px, 0); } }
+@keyframes sink-mid  { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 260px, 0); } }
+@keyframes sink-near { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 340px, 0); } }
+
+@keyframes drift-far  { 0%, 100% { transform: translate3d(-1.2%, 0, 0); } 50% { transform: translate3d(1.4%, 0, 0); } }
+@keyframes drift-mid  { 0%, 100% { transform: translate3d(2%, 0, 0); }    50% { transform: translate3d(-1.8%, 0, 0); } }
+@keyframes drift-near { 0%, 100% { transform: translate3d(-2.6%, 0, 0); } 50% { transform: translate3d(3%, 0, 0); } }
 @keyframes grain-shift {
   0%   { transform: translate3d(0, 0, 0); }
   25%  { transform: translate3d(-3%, 2%, 0); }
@@ -222,7 +721,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rays, .bloom, .snow, .grain { animation: none !important; }
+  .rays__plane, .caustics__sheet, .columns__set, .plume, .plume__stream,
+  .school, .school__band, .bloom, .snow, .snow__field, .haze, .grain { animation: none !important; }
   * { transition: none !important; }
 }
 
@@ -253,7 +753,9 @@ body {
 
 .site-nav {
   display: flex;
-  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.25rem;
   font-size: 0.92rem;
 }
 .site-nav a {
@@ -264,6 +766,51 @@ body {
   transition: color 0.18s ease, border-color 0.18s ease;
 }
 .site-nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ---- Depth toggle ---------------------------------------------------------
+   A little depth gauge: the marker sits high in the column for the shallow
+   view and drops for open water. */
+.depth-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.45rem;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1;
+  color: var(--text-dim);
+  cursor: pointer;
+  background: rgba(6, 30, 46, 0.4);
+  border: 1px solid var(--panel-edge);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background: rgba(10, 42, 62, 0.55); }
+.depth-toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+
+.depth-toggle__gauge {
+  position: relative;
+  width: 4px;
+  height: 15px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(150, 226, 246, 0.5), rgba(10, 40, 60, 0.7));
+}
+.depth-toggle__gauge i {
+  position: absolute;
+  left: 50%;
+  width: 6px; height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--biolum);
+  box-shadow: 0 0 6px rgba(120, 245, 207, 0.7);
+  transition: top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  top: 9px;
+}
+[data-ocean="twilight"] .depth-toggle__gauge i { top: 0; }
+
+.depth-toggle__label { white-space: nowrap; }
 
 .site-main {
   max-width: var(--maxw);
@@ -530,6 +1077,26 @@ body {
    Small screens
    ============================================================ */
 @media (max-width: 34rem) {
+  /* The shaft mask is tuned for a wide frame; on a phone its side falloff eats
+     most of the fan, so open it up. */
+  .rays {
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 22%, rgba(0,0,0,0.36) 52%, transparent 80%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 22%, rgba(0,0,0,0.36) 52%, transparent 80%);
+  }
+  /* Trim the layers that cost the most (large blur radii under a screen blend)
+     and contribute the least at this size. */
+  .caustics__sheet--b,
+  .rays__plane--b,
+  .columns__set--b,
+  .plume--2, .plume--4,
+  .school--far,
+  .snow--near { display: none; }
+
+  /* The plumes are spaced for a wide frame; on a phone they'd crowd the middle
+     of the text column. Push the survivors out to the edges. */
+  .plume--1 { left: 4%; }
+  .plume--3 { left: 74%; }
+
   body { font-size: 16px; }
   .card { padding: 1.25rem 1.15rem; }
   .hero { padding: 2.5rem 0 2rem; }
