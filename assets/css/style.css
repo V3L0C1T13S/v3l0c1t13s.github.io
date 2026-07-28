@@ -3,22 +3,27 @@
 ---
 
 /* ============================================================
-   Tokens
+   Tokens — the ocean's twilight zone (mesopelagic, 200-1000 m):
+   the last blue light from above, everything else black, with
+   bioluminescence for accent.
    ============================================================ */
 :root {
-  --bg:            #04060c;
-  --bg-deep:       #010207;
-  --panel:         rgba(14, 22, 42, 0.55);
-  --panel-edge:    rgba(120, 160, 255, 0.14);
-  --panel-edge-hi: rgba(140, 180, 255, 0.35);
+  --bg:            #03101a;
+  --bg-deep:       #010a12;
+  --abyss:         #000508;
 
-  --text:          #e6ecfb;
-  --text-dim:      #97a6c8;
-  --text-faint:    #6b7a9c;
+  --panel:         rgba(7, 30, 44, 0.5);
+  --panel-edge:    rgba(96, 210, 214, 0.13);
+  --panel-edge-hi: rgba(120, 235, 225, 0.34);
 
-  --accent:        #4d8dff;
-  --accent-soft:   #7fb2ff;
-  --violet:        #6c4dff;
+  --text:          #dfeff3;
+  --text-dim:      #90b2bf;
+  --text-faint:    #5b7a8a;
+
+  --accent:        #2fb0c4;   /* mid-water teal        */
+  --accent-soft:   #7fe3dd;   /* shallower, brighter   */
+  --biolum:        #78f5cf;   /* bioluminescent green  */
+  --deep:          #1b5aa8;   /* the blue that's left  */
 
   --radius:   16px;
   --radius-s: 9px;
@@ -39,7 +44,7 @@ body {
   font-size: 17px;
   line-height: 1.65;
   color: var(--text);
-  background: var(--bg);
+  background: var(--abyss);
   letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -47,121 +52,167 @@ body {
 
 /* ============================================================
    Animated background
-   Near-black field crossed by slow, glowing lens-shaped arcs.
    ============================================================ */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background:
-    radial-gradient(120% 90% at 50% -10%, #0a1024 0%, transparent 60%),
-    radial-gradient(100% 80% at 20% 110%, #061428 0%, transparent 65%),
-    var(--bg-deep);
+  background: var(--abyss);
 }
 
-/* Each "lens" is a huge blurred ring; masking half of it leaves a crescent
-   whose bright inner edge reads as the rim of a curved surface. */
-.lens {
+/* Depth gradient: dim blue-green at the surface, black below.
+   Fixed to the viewport, so scrolling never "leaves" the water column. */
+.water {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(130% 70% at 50% -20%, rgba(52, 150, 190, 0.34) 0%, rgba(16, 70, 110, 0.16) 38%, transparent 70%),
+    linear-gradient(180deg, #0a2c42 0%, #062033 22%, #03121f 52%, #010a12 78%, var(--abyss) 100%);
+}
+
+/* Light shafts from the surface, swaying like they're refracted through swell. */
+.rays {
+  position: absolute;
+  top: -20%; left: -30%;
+  width: 160%; height: 105%;
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  background: repeating-linear-gradient(97deg,
+    transparent 0px,
+    rgba(122, 204, 235, 0.085) 2px,
+    rgba(150, 225, 245, 0.13) 7px,
+    transparent 16px,
+    transparent 78px);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.45) 32%, transparent 72%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.45) 32%, transparent 72%);
+  filter: blur(7px);
+  transform-origin: 50% 0;
+  animation: sway 26s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Distant bioluminescent blooms — slow, dim, never quite in focus. */
+.bloom {
   position: absolute;
   border-radius: 50%;
   mix-blend-mode: screen;
-  will-change: transform;
+  will-change: transform, opacity;
   transform-origin: 50% 50%;
 }
 
-.lens--violet {
-  width: 90vmax; height: 62vmax;
-  top: -34vmax; left: -18vmax;
+.bloom--teal {
+  width: 62vmax; height: 44vmax;
+  top: 6vmax; left: -22vmax;
   background: radial-gradient(closest-side,
-    transparent 58%,
-    rgba(88, 62, 220, 0.30) 74%,
-    rgba(140, 118, 255, 0.85) 87%,
-    rgba(190, 175, 255, 0.55) 93%,
-    transparent 99%);
-  -webkit-mask-image: linear-gradient(160deg, #000 8%, rgba(0,0,0,0.25) 55%, transparent 78%);
-          mask-image: linear-gradient(160deg, #000 8%, rgba(0,0,0,0.25) 55%, transparent 78%);
-  filter: blur(22px);
-  animation: drift-a 54s ease-in-out infinite;
+    rgba(120, 245, 207, 0.22) 0%,
+    rgba(60, 190, 180, 0.14) 42%,
+    rgba(20, 90, 110, 0.06) 68%,
+    transparent 92%);
+  filter: blur(34px);
+  animation: current-a 62s ease-in-out infinite;
 }
 
-.lens--indigo {
-  width: 105vmax; height: 70vmax;
-  top: -8vmax; left: -30vmax;
+.bloom--azure {
+  width: 84vmax; height: 56vmax;
+  top: -18vmax; right: -26vmax;
   background: radial-gradient(closest-side,
-    transparent 60%,
-    rgba(40, 74, 190, 0.35) 75%,
-    rgba(110, 165, 255, 0.95) 88%,
-    rgba(180, 215, 255, 0.6) 93%,
-    transparent 99%);
-  -webkit-mask-image: linear-gradient(200deg, #000 10%, rgba(0,0,0,0.3) 58%, transparent 82%);
-          mask-image: linear-gradient(200deg, #000 10%, rgba(0,0,0,0.3) 58%, transparent 82%);
-  filter: blur(26px);
-  animation: drift-b 68s ease-in-out infinite;
+    rgba(88, 180, 255, 0.20) 0%,
+    rgba(34, 110, 190, 0.12) 45%,
+    transparent 88%);
+  filter: blur(40px);
+  animation: current-b 84s ease-in-out infinite;
 }
 
-.lens--azure {
-  width: 120vmax; height: 78vmax;
-  bottom: -40vmax; right: -34vmax;
+/* Something large and faint far below. */
+.bloom--deep {
+  width: 96vmax; height: 50vmax;
+  bottom: -28vmax; left: 8vmax;
   background: radial-gradient(closest-side,
-    transparent 62%,
-    rgba(24, 92, 200, 0.35) 76%,
-    rgba(80, 175, 255, 0.95) 88%,
-    rgba(170, 225, 255, 0.6) 94%,
-    transparent 99%);
-  -webkit-mask-image: linear-gradient(20deg, #000 12%, rgba(0,0,0,0.28) 60%, transparent 84%);
-          mask-image: linear-gradient(20deg, #000 12%, rgba(0,0,0,0.28) 60%, transparent 84%);
-  filter: blur(28px);
-  animation: drift-c 80s ease-in-out infinite;
+    rgba(40, 130, 165, 0.16) 0%,
+    rgba(16, 60, 95, 0.09) 50%,
+    transparent 90%);
+  filter: blur(46px);
+  animation: current-c 104s ease-in-out infinite;
 }
 
-.lens--cyan {
-  width: 78vmax; height: 52vmax;
-  bottom: -26vmax; left: -20vmax;
-  background: radial-gradient(closest-side,
-    transparent 60%,
-    rgba(18, 110, 190, 0.30) 76%,
-    rgba(96, 200, 255, 0.8) 89%,
-    transparent 98%);
-  -webkit-mask-image: linear-gradient(340deg, #000 10%, rgba(0,0,0,0.25) 55%, transparent 80%);
-          mask-image: linear-gradient(340deg, #000 10%, rgba(0,0,0,0.25) 55%, transparent 80%);
-  filter: blur(24px);
-  animation: drift-d 92s ease-in-out infinite;
+/* Marine snow: three parallax layers of specks sinking through the frame.
+   Each layer tiles, and each drops exactly one tile height per cycle, so the
+   loop is seamless. */
+.snow {
+  position: absolute;
+  inset: -30% -10%;
+  mix-blend-mode: screen;
+  will-change: transform;
 }
 
-/* Pulls the corners back down to black so the glows stay contained. */
+.snow--far {
+  opacity: 0.34;
+  background-image:
+    radial-gradient(1px 1px at 22px 34px,  rgba(190, 235, 240, 0.85), transparent),
+    radial-gradient(1px 1px at 118px 92px, rgba(150, 215, 230, 0.7), transparent),
+    radial-gradient(1px 1px at 63px 148px, rgba(180, 240, 225, 0.6), transparent),
+    radial-gradient(1px 1px at 165px 12px, rgba(140, 205, 225, 0.6), transparent);
+  background-size: 190px 190px;
+  animation: sink-far 46s linear infinite;
+}
+
+.snow--mid {
+  opacity: 0.42;
+  background-image:
+    radial-gradient(1.6px 1.6px at 46px 18px,  rgba(205, 245, 245, 0.9), transparent),
+    radial-gradient(1.4px 1.4px at 152px 118px, rgba(120, 245, 207, 0.55), transparent),
+    radial-gradient(1.6px 1.6px at 92px 206px,  rgba(190, 235, 245, 0.75), transparent);
+  background-size: 260px 260px;
+  animation: sink-mid 34s linear infinite;
+}
+
+.snow--near {
+  opacity: 0.3;
+  background-image:
+    radial-gradient(2.6px 2.6px at 70px 60px,   rgba(215, 250, 250, 0.85), transparent),
+    radial-gradient(2.2px 2.2px at 268px 220px, rgba(120, 245, 207, 0.5), transparent);
+  background-size: 340px 340px;
+  filter: blur(0.6px);
+  animation: sink-near 22s linear infinite;
+}
+
+/* Pressure closing in at the edges. */
 .vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(115% 85% at 50% 45%, transparent 40%, rgba(1, 2, 7, 0.55) 78%, rgba(1, 2, 7, 0.92) 100%);
+  background: radial-gradient(115% 80% at 50% 30%, transparent 38%, rgba(0, 5, 8, 0.6) 76%, rgba(0, 5, 8, 0.95) 100%);
 }
 
-/* Fine film grain — kills gradient banding on wide, dark ramps. */
+/* Fine grain — kills banding on the long, dark depth ramp. */
 .grain {
   position: absolute;
   inset: -50%;
-  opacity: 0.16;
+  opacity: 0.14;
   pointer-events: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
   animation: grain-shift 6s steps(6) infinite;
 }
 
-@keyframes drift-a {
-  0%, 100% { transform: rotate(-6deg)  translate3d(0, 0, 0) scale(1); }
-  50%      { transform: rotate(8deg)   translate3d(4vmax, 3vmax, 0) scale(1.08); }
+@keyframes sway {
+  0%, 100% { transform: skewX(-3deg) translate3d(-1.5%, 0, 0); opacity: 0.42; }
+  50%      { transform: skewX(4deg)  translate3d(2.5%, 0, 0);  opacity: 0.6; }
 }
-@keyframes drift-b {
-  0%, 100% { transform: rotate(4deg)   translate3d(0, 0, 0) scale(1.02); }
-  50%      { transform: rotate(-10deg) translate3d(-5vmax, 4vmax, 0) scale(1.1); }
+@keyframes current-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1);    opacity: 0.85; }
+  50%      { transform: translate3d(6vmax, 4vmax, 0) scale(1.14); opacity: 1; }
 }
-@keyframes drift-c {
-  0%, 100% { transform: rotate(2deg)   translate3d(0, 0, 0) scale(1); }
-  50%      { transform: rotate(-7deg)  translate3d(-3vmax, -5vmax, 0) scale(1.07); }
+@keyframes current-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); opacity: 0.75; }
+  50%      { transform: translate3d(-5vmax, 6vmax, 0) scale(1);   opacity: 1; }
 }
-@keyframes drift-d {
-  0%, 100% { transform: rotate(-3deg)  translate3d(0, 0, 0) scale(1.04); }
-  50%      { transform: rotate(9deg)   translate3d(5vmax, -3vmax, 0) scale(0.96); }
+@keyframes current-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1);    opacity: 0.7; }
+  50%      { transform: translate3d(4vmax, -3vmax, 0) scale(1.1);  opacity: 1; }
 }
+@keyframes sink-far  { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(-190px, 190px, 0); } }
+@keyframes sink-mid  { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(260px, 260px, 0); } }
+@keyframes sink-near { from { transform: translate3d(0, 0, 0); }      to { transform: translate3d(-340px, 340px, 0); } }
 @keyframes grain-shift {
   0%   { transform: translate3d(0, 0, 0); }
   25%  { transform: translate3d(-3%, 2%, 0); }
@@ -171,7 +222,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lens, .grain { animation: none !important; }
+  .rays, .bloom, .snow, .grain { animation: none !important; }
   * { transition: none !important; }
 }
 
@@ -226,7 +277,7 @@ body {
   padding: 2rem 1.25rem 3rem;
   color: var(--text-faint);
   font-size: 0.85rem;
-  border-top: 1px solid rgba(120, 160, 255, 0.08);
+  border-top: 1px solid rgba(96, 210, 214, 0.09);
 }
 
 /* ============================================================
@@ -246,7 +297,7 @@ body {
   line-height: 1.02;
   letter-spacing: -0.03em;
   font-weight: 700;
-  background: linear-gradient(120deg, #ffffff 12%, #a9c8ff 52%, #7b6bff 92%);
+  background: linear-gradient(120deg, #f2fbfb 10%, #8fe6de 48%, #2c7fb8 92%);
   -webkit-background-clip: text;
           background-clip: text;
   color: transparent;
@@ -267,8 +318,8 @@ body {
   border-radius: var(--radius);
   background: var(--panel);
   border: 1px solid var(--panel-edge);
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
   box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9);
 }
 
@@ -287,7 +338,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(120deg, rgba(108, 77, 255, 0.10), rgba(77, 141, 255, 0.10));
+  background: linear-gradient(120deg, rgba(120, 245, 207, 0.08), rgba(47, 176, 196, 0.10));
   opacity: 0;
   transition: opacity 0.22s ease;
   pointer-events: none;
@@ -295,7 +346,7 @@ body {
 .card--link:hover {
   transform: translateY(-2px);
   border-color: var(--panel-edge-hi);
-  box-shadow: 0 24px 60px -26px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(120, 160, 255, 0.06);
+  box-shadow: 0 24px 60px -26px rgba(0, 0, 0, 0.95), 0 0 22px -8px rgba(120, 245, 207, 0.28);
 }
 .card--link:hover::after { opacity: 1; }
 
@@ -340,9 +391,9 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: lowercase;
-  color: var(--accent-soft);
-  background: rgba(77, 141, 255, 0.1);
-  border: 1px solid rgba(77, 141, 255, 0.22);
+  color: var(--biolum);
+  background: rgba(47, 176, 196, 0.1);
+  border: 1px solid rgba(120, 245, 207, 0.22);
 }
 
 .post__header { margin-bottom: 1.75rem; }
@@ -368,14 +419,15 @@ body {
 .prose p, .prose ul, .prose ol { margin: 0 0 1.15rem; }
 .prose ul, .prose ol { padding-left: 1.25rem; }
 .prose li { margin-bottom: 0.4rem; }
+.prose li::marker { color: var(--accent); }
 
 .prose a {
   color: var(--accent-soft);
   text-decoration: none;
-  border-bottom: 1px solid rgba(127, 178, 255, 0.35);
+  border-bottom: 1px solid rgba(127, 227, 221, 0.35);
   transition: border-color 0.18s ease, color 0.18s ease;
 }
-.prose a:hover { color: #fff; border-bottom-color: var(--accent); }
+.prose a:hover { color: var(--biolum); border-bottom-color: var(--biolum); }
 
 .prose blockquote {
   margin: 1.5rem 0;
@@ -395,7 +447,7 @@ body {
   border: 0;
   height: 1px;
   margin: 2.25rem 0;
-  background: linear-gradient(90deg, transparent, rgba(120, 160, 255, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(120, 245, 207, 0.3), transparent);
 }
 
 .prose code {
@@ -403,9 +455,9 @@ body {
   font-size: 0.88em;
   padding: 0.14em 0.4em;
   border-radius: 6px;
-  background: rgba(80, 120, 220, 0.14);
-  border: 1px solid rgba(120, 160, 255, 0.14);
-  color: #cfe0ff;
+  background: rgba(20, 90, 110, 0.28);
+  border: 1px solid rgba(96, 210, 214, 0.16);
+  color: #c6efee;
 }
 
 .prose pre {
@@ -413,8 +465,8 @@ body {
   padding: 1rem 1.1rem;
   overflow-x: auto;
   border-radius: var(--radius-s);
-  background: rgba(3, 7, 18, 0.75);
-  border: 1px solid rgba(120, 160, 255, 0.14);
+  background: rgba(1, 14, 24, 0.75);
+  border: 1px solid rgba(96, 210, 214, 0.14);
   font-size: 0.87rem;
   line-height: 1.55;
 }
@@ -422,7 +474,7 @@ body {
   padding: 0;
   background: none;
   border: 0;
-  color: #d7e3ff;
+  color: #d3eeee;
 }
 
 .prose table {
@@ -435,20 +487,20 @@ body {
 }
 .prose th, .prose td {
   padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid rgba(120, 160, 255, 0.12);
+  border-bottom: 1px solid rgba(96, 210, 214, 0.13);
   text-align: left;
 }
 .prose th { color: var(--accent-soft); font-weight: 600; }
 
 /* Rouge syntax highlighting, tuned for the palette. */
-.highlight .c, .highlight .cm, .highlight .c1, .highlight .cs { color: #5d6b8c; font-style: italic; }
-.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr { color: #9d8bff; }
-.highlight .s, .highlight .s1, .highlight .s2, .highlight .sb, .highlight .sd { color: #6fd0ff; }
-.highlight .nf, .highlight .nc { color: #7fb2ff; }
-.highlight .m, .highlight .mi, .highlight .mf { color: #ffb3d0; }
-.highlight .nt { color: #8fa8ff; }
-.highlight .na { color: #c0d4ff; }
-.highlight .o, .highlight .ow { color: #a9c8ff; }
+.highlight .c, .highlight .cm, .highlight .c1, .highlight .cs { color: #557584; font-style: italic; }
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr { color: #78f5cf; }
+.highlight .s, .highlight .s1, .highlight .s2, .highlight .sb, .highlight .sd { color: #7fd8ff; }
+.highlight .nf, .highlight .nc { color: #a8e9e2; }
+.highlight .m, .highlight .mi, .highlight .mf { color: #ffc98a; }
+.highlight .nt { color: #6fc7dd; }
+.highlight .na { color: #bfe4ea; }
+.highlight .o, .highlight .ow { color: #8fd4d0; }
 
 /* ============================================================
    Pager
@@ -465,11 +517,11 @@ body {
   border-radius: var(--radius-s);
   text-decoration: none;
   color: var(--text);
-  background: rgba(12, 20, 40, 0.45);
+  background: rgba(6, 26, 40, 0.45);
   border: 1px solid var(--panel-edge);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
-.pager__link:hover { border-color: var(--panel-edge-hi); background: rgba(18, 30, 60, 0.6); }
+.pager__link:hover { border-color: var(--panel-edge-hi); background: rgba(10, 40, 58, 0.6); }
 .pager__link--next { text-align: right; }
 .pager__dir { display: block; font-size: 0.76rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
 .pager__title { display: block; margin-top: 0.25rem; font-size: 0.95rem; }
