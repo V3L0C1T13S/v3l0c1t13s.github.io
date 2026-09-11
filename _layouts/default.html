@@ -102,6 +102,11 @@
   <script>
     (function () {
       var root = document.documentElement;
+      function updateVisibility() {
+        root.toggleAttribute('data-page-hidden', document.hidden);
+      }
+      document.addEventListener('visibilitychange', updateVisibility);
+      updateVisibility();
       var btn = document.querySelector('.depth-toggle');
       var label = btn.querySelector('.depth-toggle__label');
       var meta = document.querySelector('meta[name=theme-color]');
