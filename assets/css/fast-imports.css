@@ -1,0 +1,250 @@
+/* Call-path diagram. Shares the site's tokens so it reads as part of the page
+   rather than a pasted-in image. Everything is legible with the animation off:
+   JS adds .is-animated, and only then do the steps start out hidden. */
+
+.import-viz {
+  --iv-slow:      #6ea7dd;                      /* the long way round */
+  --iv-slow-glow: rgba(110, 167, 221, 0.55);
+  --iv-fast:      var(--biolum);                /* the compiled path  */
+  --iv-fast-glow: rgba(120, 245, 207, 0.55);
+  --iv-step-in:   360ms;
+
+  margin: 1.9rem 0;
+  padding: 1rem 0 1.1rem;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9);
+  color: var(--text);
+}
+
+/* ---- Control bar ------------------------------------------------------- */
+
+.import-viz__bar {
+  display: none;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0 1.3rem 0.2rem;
+}
+.import-viz.is-animated .import-viz__bar { display: flex; }
+
+.import-viz__dots { display: flex; gap: 5px; flex: 1 1 auto; }
+.import-viz__dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(120, 245, 207, 0.18);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.import-viz__dot:hover { background: rgba(120, 245, 207, 0.4); }
+.import-viz__dot.is-done { background: rgba(120, 245, 207, 0.42); }
+.import-viz__dot.is-current {
+  background: var(--biolum);
+  transform: scale(1.35);
+  box-shadow: 0 0 10px -1px rgba(120, 245, 207, 0.85);
+}
+
+/* The step explanation sits under the diagram, where the reader's eye already
+   is when a node lands, rather than crowding the controls. */
+.import-viz__status {
+  display: none;
+  margin: 0.85rem 1.3rem 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--accent);
+  min-height: 2.6em;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+.import-viz.is-animated .import-viz__status { display: block; }
+.import-viz__count {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font: 500 0.72rem/1.6 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--accent-soft);
+}
+
+.import-viz__buttons { display: flex; gap: 0.4rem; flex: none; }
+.import-viz__btn {
+  font: 500 0.72rem/1 var(--font-mono);
+  letter-spacing: 0.03em;
+  padding: 0.4rem 0.6rem;
+  color: var(--text-dim);
+  background: rgba(10, 42, 62, 0.4);
+  border: 1px solid var(--panel-edge);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.import-viz__btn:hover { color: var(--text); border-color: var(--panel-edge-hi); background: rgba(10, 42, 62, 0.7); }
+.import-viz__btn:focus-visible,
+.import-viz__dot:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
+
+/* ---- Canvas ------------------------------------------------------------ */
+
+.import-viz__canvas { overflow-x: auto; padding: 0.2rem 1.3rem 0; }
+.import-viz__canvas:focus-visible { outline: 1px solid var(--accent-soft); outline-offset: -2px; }
+.import-viz svg {
+  display: block;
+  width: 100%;
+  min-width: 580px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  overflow: visible;
+}
+
+.import-viz text { fill: var(--text); }
+.import-viz .iv-title { font-family: var(--font-sans); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.import-viz .iv-muted { font-family: var(--font-sans); font-size: 12.5px; fill: var(--text-dim); }
+.import-viz .iv-label { font-size: 11.5px; letter-spacing: 0.11em; fill: var(--iv-color); }
+.import-viz .iv-small { font-size: 11px; fill: var(--text-dim); }
+.import-viz .iv-centered { text-anchor: middle; }
+
+.iv-traditional { --iv-color: var(--iv-slow); --iv-glow: var(--iv-slow-glow); --iv-marker: url(#import-arrow-slow); }
+.iv-fast        { --iv-color: var(--iv-fast); --iv-glow: var(--iv-fast-glow); --iv-marker: url(#import-arrow-fast); }
+
+.import-viz .iv-node {
+  fill: rgba(4, 24, 37, 0.72);
+  stroke: var(--panel-edge-hi);
+  stroke-width: 1;
+}
+.import-viz .iv-fast .iv-node { stroke: rgba(120, 245, 207, 0.42); }
+.import-viz .iv-host {
+  fill: rgba(12, 52, 74, 0.8);
+  stroke: var(--accent-soft);
+  stroke-width: 1;
+}
+.import-viz.is-animated .iv-region { transition: width 460ms cubic-bezier(0.25, 0.9, 0.3, 1); }
+.import-viz .iv-region { fill: rgba(120, 245, 207, 0.035); stroke: rgba(120, 245, 207, 0.25); stroke-dasharray: 4 7; }
+.import-viz .iv-wire,
+.import-viz .iv-return {
+  fill: none;
+  stroke: var(--iv-color);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  marker-end: var(--iv-marker);
+}
+.import-viz .iv-return { opacity: 0.6; }
+.import-viz .iv-divider { stroke: rgba(96, 210, 214, 0.16); stroke-width: 1; }
+
+/* The travelling dart. Invisible until its step runs. */
+/* The travelling dart. Dash lengths are in user units and the path's own
+   length arrives as --len from JS, so the dart is the same size and moves at
+   much the same speed whether it crosses a 34-unit wire or the long return. */
+.import-viz .iv-dart {
+  --len: 100;
+  --dart: 26;
+  fill: none;
+  stroke: var(--iv-color);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--dart) var(--len);
+  stroke-dashoffset: var(--dart);
+  opacity: 0;
+  filter: drop-shadow(0 0 3px var(--iv-color)) drop-shadow(0 0 8px var(--iv-glow));
+  pointer-events: none;
+}
+
+.prose .import-viz figcaption {
+  margin: 0.9rem 1.4rem 0;
+  text-align: left;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ---- Staged reveal ----------------------------------------------------- */
+
+/* Only once JS is driving does anything start out hidden. */
+.import-viz.is-animated .iv-step > .iv-box,
+.import-viz.is-animated .iv-step > .iv-head,
+.import-viz.is-animated .iv-step > .iv-region,
+.import-viz.is-animated .iv-step > .iv-wire,
+.import-viz.is-animated .iv-step > .iv-return { opacity: 0; }
+
+.import-viz.is-animated .iv-box,
+.import-viz.is-animated .iv-head { transform-box: fill-box; transform-origin: 50% 50%; }
+
+/* Wire draws itself in under the dart. */
+.import-viz .iv-step { --travel: 380ms; }
+.import-viz.is-animated .iv-step.is-live > .iv-wire,
+.import-viz.is-animated .iv-step.is-live > .iv-return {
+  animation: iv-draw var(--travel) cubic-bezier(0.4, 0, 0.1, 1) forwards;
+}
+.import-viz.is-animated .iv-step.is-live > .iv-return {
+  animation-name: iv-draw-return;
+}
+/* Boxes pop as the dart lands. Steps with no wire pop immediately. */
+.import-viz.is-animated .iv-step.is-live > .iv-box,
+.import-viz.is-animated .iv-step.is-live > .iv-region {
+  animation: iv-pop var(--iv-step-in) cubic-bezier(0.2, 1.5, 0.4, 1) var(--iv-land) forwards;
+}
+.import-viz.is-animated .iv-step.is-live > .iv-head {
+  animation: iv-rise var(--iv-step-in) cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.import-viz .iv-step { --iv-land: calc(var(--travel) - 120ms); }
+.import-viz .iv-step:not(.has-wire) { --iv-land: 90ms; }
+/* The flash: node edge blooms in its lane colour, then settles. */
+.import-viz.is-animated .iv-step.is-live .iv-node,
+.import-viz.is-animated .iv-step.is-live .iv-host {
+  animation: iv-flash 620ms ease-out var(--iv-land) backwards;
+}
+
+/* The current step sits slightly brighter so the eye knows where to look. */
+.import-viz.is-animated .iv-step.is-current .iv-node,
+.import-viz.is-animated .iv-step.is-current .iv-host { filter: drop-shadow(0 0 9px var(--iv-glow)); }
+
+/* Jumping via the dots: land on the finished state with no animation. */
+.import-viz.is-animated .iv-step.is-instant > * { animation: none !important; }
+.import-viz.is-animated .iv-step.is-instant.is-live > .iv-box,
+.import-viz.is-animated .iv-step.is-instant.is-live > .iv-head,
+.import-viz.is-animated .iv-step.is-instant.is-live > .iv-region,
+.import-viz.is-animated .iv-step.is-instant.is-live > .iv-wire { opacity: 1; transform: none; }
+.import-viz.is-animated .iv-step.is-instant.is-live > .iv-return { opacity: 0.6; transform: none; }
+
+@keyframes iv-draw {
+  from { opacity: 0; stroke-dasharray: 0 100; }
+  to   { opacity: 1; stroke-dasharray: 100 0; }
+}
+@keyframes iv-draw-return {
+  from { opacity: 0; stroke-dasharray: 0 100; }
+  to   { opacity: 0.6; stroke-dasharray: 100 0; }
+}
+@keyframes iv-pop {
+  from { opacity: 0; transform: scale(0.86) translateY(5px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes iv-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes iv-flash {
+  0%   { stroke: var(--iv-color); stroke-width: 2; filter: drop-shadow(0 0 12px var(--iv-glow)); }
+  100% { stroke-width: 1; filter: drop-shadow(0 0 0 transparent); }
+}
+
+@media (max-width: 44rem) {
+  .import-viz__bar { flex-wrap: wrap; }
+  .import-viz__status { order: 3; flex-basis: 100%; }
+  .import-viz__buttons { margin-left: auto; }
+  .import-viz__canvas { padding-inline: 1rem; }
+  .prose .import-viz figcaption { margin-inline: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .import-viz__bar { display: none !important; }
+  .import-viz .iv-dart { display: none; }
+}
+
+@media print {
+  .import-viz__bar, .import-viz .iv-dart { display: none !important; }
+  .import-viz { break-inside: avoid; print-color-adjust: exact; }
+  .import-viz svg { min-width: 0; }
+}

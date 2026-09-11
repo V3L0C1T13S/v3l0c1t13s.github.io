@@ -830,10 +830,28 @@ body {
   font-style: italic;
 }
 
-.prose img {
+.prose img,
+.prose video {
   max-width: 100%;
   height: auto;
   border-radius: var(--radius-s);
+}
+
+.prose figure {
+  margin: 1.75rem 0;
+}
+
+.prose figure img,
+.prose figure video {
+  display: block;
+  margin-inline: auto;
+}
+
+.prose figcaption {
+  margin-top: 0.65rem;
+  color: var(--text-dim);
+  text-align: center;
+  font-size: 0.9em;
 }
 
 .prose hr {
@@ -941,4 +959,63 @@ body {
   .hero { padding: 2.5rem 0 2rem; }
   .pager { flex-direction: column; }
   .pager__link--next { text-align: left; }
+}
+
+/* Post reading layout and section navigation. */
+.site-main--post {
+  max-width: 76rem;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+.post-layout { max-width: 50rem; margin-inline: auto; }
+.post-body { min-width: 0; }
+.post-sections {
+  align-self: start;
+  padding: 1rem 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.post-sections__title {
+  margin: 0 0 0.9rem;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.post-sections__list { list-style: none; padding: 0; margin: 0; }
+.post-sections a {
+  display: block;
+  padding: 0.5rem 0.85rem;
+  border-left: 1px solid var(--panel-edge);
+  color: var(--text-dim);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.post-sections a:hover,
+.post-sections a[aria-current] {
+  color: var(--accent-soft);
+  border-left-color: var(--biolum);
+  background: rgba(47, 176, 196, 0.07);
+}
+.post-sections a:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+.post-sections__subsection a { padding-left: 1.6rem; font-size: 0.8rem; }
+.post .prose { overflow-wrap: break-word; }
+.post .prose h2, .post .prose h3 { scroll-margin-top: 2rem; }
+@media (min-width: 68rem) {
+  .post-layout--sections {
+    max-width: none;
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 50rem);
+    justify-content: center;
+    gap: 2rem;
+  }
+  .post-sections {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100dvh - 4rem);
+    overflow-y: auto;
+  }
+}
+@media (max-width: 67.999rem) {
+  .post-sections { margin-bottom: 1.25rem; }
 }

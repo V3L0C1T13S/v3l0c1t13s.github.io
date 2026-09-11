@@ -1,6 +1,12 @@
 ---
 layout: default
 ---
+<div class="post-layout">
+  <nav class="post-sections" aria-label="Post sections" hidden>
+    <p class="post-sections__title">On this page</p>
+    <ol class="post-sections__list"></ol>
+  </nav>
+  <div class="post-body">
 <article class="post card">
   <header class="post__header">
     <p class="post__meta">
@@ -33,3 +39,7 @@ layout: default
   </a>
   {%- endif %}
 </nav>
+
+  </div>
+</div>
+<script src="{{ '/assets/js/post-sections.js' | relative_url }}" defer></script>

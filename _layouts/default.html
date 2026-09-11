@@ -91,7 +91,7 @@
     </nav>
   </header>
 
-  <main class="site-main">
+  <main class="site-main{% if page.layout == 'post' %} site-main--post{% endif %}">
     {{ content }}
   </main>
 
