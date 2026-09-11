@@ -16,65 +16,22 @@
   </script>
 </head>
 <body>
-  <!-- Animated background, in two depths. Both are built from the same idea —
-       layer the phenomena in the order light actually encounters them — but the
-       physics at 30 m and at 300 m are different enough to need different
-       layers, so each depth gets its own set and the other is display:none.
+  <!-- Animated ocean backdrop, drawn in WebGL (assets/js/ocean.js).
+
+       The whole water column is a single opaque fragment shader now: depth
+       gradient, caustics, converging shafts, diffuse columns, blooms, haze,
+       vignette and grain. Marine snow is one small additive point pass. That
+       replaces a dozen blurred, blend-moded, perspective-transformed DOM
+       layers plus animated SVG turbulence.
 
        "open"     — open water, surface out of sight. Light arrives diffuse and
                     near-parallel; scattering fills the frame and the floor
                     settles to a dim teal rather than true black.
        "twilight" — nearer the surface. Caustics and converging shafts, over a
-                    fast falloff into the dark. -->
-  <div class="backdrop" aria-hidden="true">
-    <div class="water"></div>
+                    fast falloff into the dark.
 
-    <!-- ---- Shallow only ------------------------------------------------ -->
-
-    <!-- Caustics: two counter-drifting noise ridges, the interference of a
-         wind-chopped surface refracting sunlight. Strongest just below it. -->
-    <div class="depth depth--twilight">
-      <div class="caustics">
-        <div class="caustics__sheet caustics__sheet--a"></div>
-        <div class="caustics__sheet caustics__sheet--b"></div>
-      </div>
-
-      <!-- God rays: a striped plane laid back under perspective, so the shafts
-           converge on a vanishing point where the sun is. -->
-      <div class="rays">
-        <div class="rays__plane rays__plane--a"></div>
-        <div class="rays__plane rays__plane--b"></div>
-        <div class="rays__plane rays__plane--c"></div>
-      </div>
-    </div>
-
-    <!-- ---- Open water only --------------------------------------------- -->
-
-    <div class="depth depth--open">
-      <!-- Shafts from a surface too far above to resolve: near-parallel, soft,
-           and low-contrast rather than converging on a visible sun. -->
-      <div class="columns">
-        <div class="columns__set columns__set--a"></div>
-        <div class="columns__set columns__set--b"></div>
-      </div>
-    </div>
-
-    <!-- ---- Both -------------------------------------------------------- -->
-
-    <div class="bloom bloom--teal"></div>
-    <div class="bloom bloom--azure"></div>
-    <div class="bloom bloom--deep"></div>
-
-    <!-- Marine snow. Outer element sways with the current, inner sinks; the two
-         compose into the drifting, non-vertical fall real particles have. -->
-    <div class="snow snow--far"><div class="snow__field"></div></div>
-    <div class="snow snow--mid"><div class="snow__field"></div></div>
-    <div class="snow snow--near"><div class="snow__field"></div></div>
-
-    <div class="haze"></div>
-    <div class="vignette"></div>
-    <div class="grain"></div>
-  </div>
+       WebGL is required; there is no static fallback. -->
+  <canvas id="ocean" class="ocean" aria-hidden="true" data-images="{{ '/assets/images/' | relative_url }}"></canvas>
 
   <header class="site-header">
     <a class="brand" href="{{ '/' | relative_url }}">
@@ -99,14 +56,10 @@
     <p>&copy; {{ site.time | date: '%Y' }} {{ site.author }}.</p>
   </footer>
 
+  <script src="{{ '/assets/js/ocean.js' | relative_url }}" defer></script>
   <script>
     (function () {
       var root = document.documentElement;
-      function updateVisibility() {
-        root.toggleAttribute('data-page-hidden', document.hidden);
-      }
-      document.addEventListener('visibilitychange', updateVisibility);
-      updateVisibility();
       var btn = document.querySelector('.depth-toggle');
       var label = btn.querySelector('.depth-toggle__label');
       var meta = document.querySelector('meta[name=theme-color]');
