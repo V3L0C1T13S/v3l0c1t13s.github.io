@@ -673,7 +673,10 @@
   var COVER_MAX = 8;
   var coverRects = new Float32Array(COVER_MAX * 4);
   var coverCount = 0;
-  var capturing = false;
+  /* How many coverRects apply to the frame currently being built. */
+  var frameCoverN = 0;
+  /* Depth the current --ocean-frost was captured at. */
+  var capturedDepth = -1;
   function updateCover() {
     var n = 0;
     if (root.dataset.frost === '1') {
@@ -709,7 +712,7 @@
     gl.uniform2f(u.uCss, state.vw, state.vh);
     if (u.uCover) {
       gl.uniform4fv(u.uCover, coverRects);
-      gl.uniform1i(u.uCoverN, capturing ? 0 : coverCount);
+      gl.uniform1i(u.uCoverN, frameCoverN);
     }
   }
   function fullscreen(u) {
@@ -755,7 +758,17 @@
 
   function draw() {
     if (!state.w || !state.h) return;
+    /* While the depth is crossfading the panels go back to a live
+       backdrop-filter. It tracks the water exactly, where a capture would
+       always be a frame behind and then snap once it settled. As soon as the
+       crossfade ends we take one capture and hand them the static copy again.
+       Both the live and the capturing frame need the water drawn everywhere, so
+       the cover sits those out too. */
+    var live = state.depth !== targetDepth();
+    var needCapture = !live && capturedDepth !== state.depth;
+    if (live && root.hasAttribute('data-frost')) root.removeAttribute('data-frost');
     updateCover();
+    frameCoverN = (live || needCapture) ? 0 : coverCount;
     var t = state.time;
     var vw = state.vw, vh = state.vh;
     var depth = state.depth;
@@ -941,25 +954,15 @@
     overBlend();
     fullscreen(U.grain);
 
-    captureFrost();
+    if (needCapture) captureFrost();
   }
 
   /* The translucent text panels would otherwise run a live backdrop-filter,
      re-blurring the animating water every single frame. Instead grab one
      heavily downsampled frame (scaling it back up is the blur) and expose it
      as --ocean-frost, so the panels can paint a static, viewport-anchored copy
-     of the water for free. Re-taken only when the depth actually changes. */
-  var capturedDepth = -1;
+     of the water for free. Re-taken once each time the depth settles. */
   function captureFrost() {
-    if (!state.w || state.depth !== targetDepth()) return;
-    if (capturedDepth === state.depth) return;
-    capturedDepth = state.depth;
-    /* Draw one frame with the cover switched off first: capturing the normal
-       frame would copy the discarded panel regions too, and the panels paint
-       that capture, so they would show the hole they punched. */
-    capturing = true;
-    draw();
-    capturing = false;
     var w = 160;
     var h = Math.max(1, Math.round(w * state.h / state.w));
     var c = document.createElement('canvas');
@@ -969,6 +972,7 @@
       root.style.setProperty('--ocean-frost', 'url("' + c.toDataURL('image/jpeg', 0.82) + '")');
       root.dataset.frost = '1';
     } catch (e) {}
+    capturedDepth = state.depth;
   }
 
   function render() { draw(); }
