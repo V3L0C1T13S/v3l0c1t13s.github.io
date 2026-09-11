@@ -20,19 +20,8 @@
   color: var(--text);
 }
 
-/* See [data-frost] .card in style.css: the captured water frame replaces the
-   per-frame backdrop-filter. */
-[data-frost] .import-viz {
-  background-color: transparent;
-  background-image:
-    linear-gradient(var(--panel), var(--panel)),
-    var(--ocean-frost);
-  background-repeat: no-repeat, no-repeat;
-  background-size: 100% 100%, 100% 100%;
-  background-attachment: scroll, fixed;
-  -webkit-backdrop-filter: none;
-          backdrop-filter: none;
-}
+/* The captured water frame that replaces .import-viz's backdrop-filter is
+   applied by the [data-frost] rule in style.css. */
 
 /* ---- Control bar ------------------------------------------------------- */
 

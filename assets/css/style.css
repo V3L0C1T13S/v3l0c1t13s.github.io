@@ -132,7 +132,9 @@ body {
           backdrop-filter: blur(8px);
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
-.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background: rgba(10, 42, 62, 0.55); }
+/* background-color, not the background shorthand: the shorthand would wipe the
+   captured frost layer these panels carry once [data-frost] is set. */
+.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background-color: rgba(10, 42, 62, 0.55); }
 .depth-toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
 
 .depth-toggle__gauge {
@@ -219,13 +221,17 @@ body {
 }
 
 /* assets/js/ocean.js captures a downsampled frame of the water as --ocean-frost.
-   Once it exists, paint that static copy (anchored to the viewport, exactly how
-   backdrop-filter sampled the fixed canvas) above the panel tint instead of
-   re-blurring the animating water every frame. */
-[data-frost] .card {
+   Panels then paint that static copy (anchored to the viewport, exactly how
+   backdrop-filter sampled the fixed canvas) over their tint instead of
+   re-blurring the animating water every frame. It also makes them opaque, which
+   lets the water pass skip the area behind them entirely. */
+[data-frost] .card,
+[data-frost] .import-viz,
+[data-frost] .pager__link,
+[data-frost] .depth-toggle {
   background-color: transparent;
   background-image:
-    linear-gradient(var(--panel), var(--panel)),
+    linear-gradient(var(--frost-tint), var(--frost-tint)),
     var(--ocean-frost);
   background-repeat: no-repeat, no-repeat;
   background-size: 100% 100%, 100% 100%;
@@ -233,6 +239,12 @@ body {
   -webkit-backdrop-filter: none;
           backdrop-filter: none;
 }
+[data-frost] .card,
+[data-frost] .import-viz { --frost-tint: var(--panel); }
+[data-frost] .pager__link { --frost-tint: rgba(6, 26, 40, 0.45); }
+[data-frost] .pager__link:hover { --frost-tint: rgba(10, 40, 58, 0.6); }
+[data-frost] .depth-toggle { --frost-tint: rgba(6, 30, 46, 0.4); }
+[data-frost] .depth-toggle:hover { --frost-tint: rgba(10, 42, 62, 0.55); }
 
 .post-list {
   display: grid;
@@ -450,7 +462,7 @@ body {
   border: 1px solid var(--panel-edge);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
-.pager__link:hover { border-color: var(--panel-edge-hi); background: rgba(10, 40, 58, 0.6); }
+.pager__link:hover { border-color: var(--panel-edge-hi); background-color: rgba(10, 40, 58, 0.6); }
 .pager__link--next { text-align: right; }
 .pager__dir { display: block; font-size: 0.76rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
 .pager__title { display: block; margin-top: 0.25rem; font-size: 0.95rem; }

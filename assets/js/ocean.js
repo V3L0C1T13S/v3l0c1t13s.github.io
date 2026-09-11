@@ -677,10 +677,21 @@
   function updateCover() {
     var n = 0;
     if (root.dataset.frost === '1') {
-      var vw = state.vw, vh = state.vh, pad = 16;
-      var nodes = document.querySelectorAll('.card, .import-viz');
+      var vw = state.vw, vh = state.vh;
+      var nodes = document.querySelectorAll('.card, .import-viz, .pager__link, .depth-toggle');
       for (var i = 0; i < nodes.length && n < COVER_MAX; i++) {
-        var r = nodes[i].getBoundingClientRect();
+        var el = nodes[i];
+        var r = el.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top >= vh || r.right <= 0 || r.left >= vw) continue;
+        /* Inset by the corner radius so the rounded corners (which really do
+           show the water) stay shaded. A pill's radius is half its height, so
+           its rect collapses and it drops out rather than leaving a disc of
+           missing water. */
+        if (el.__pad === undefined) {
+          var rad = parseFloat(getComputedStyle(el).borderTopLeftRadius);
+          el.__pad = isFinite(rad) ? rad : 0;
+        }
+        var pad = Math.min(el.__pad, r.width / 2, r.height / 2);
         var x0 = Math.max(0, r.left + pad), y0 = Math.max(0, r.top + pad);
         var x1 = Math.min(vw, r.right - pad), y1 = Math.min(vh, r.bottom - pad);
         if (x1 <= x0 || y1 <= y0) continue;
