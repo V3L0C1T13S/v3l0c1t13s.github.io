@@ -66,7 +66,7 @@
     var paused = false;     /* user-requested pause */
     var offscreen = true;   /* not worth animating out of view */
     var last = 0;
-    var timer = null;
+    var running = false;
 
     /* The dashed compiled region wraps what is on screen now, not what will
        eventually be there, so it widens as the lane fills in. */
@@ -144,7 +144,6 @@
     function pad(n) { return (n < 10 ? '0' : '') + n; }
 
     function clear() {
-      stop();
       steps.forEach(function (s) {
         s.classList.remove('is-live', 'is-current', 'is-instant');
         var dart = s.querySelector('.iv-dart');
@@ -180,7 +179,6 @@
     }
 
     function setPaused(next) {
-      if (next) stop();
       paused = next;
       if (toggle) {
         toggle.textContent = paused ? 'Play' : 'Pause';
@@ -189,24 +187,25 @@
       if (!paused) start();
     }
 
-    // CSS / Web Animations handle the motion. Wake JS only for the next step,
-    // rather than polling once per display frame throughout every reading hold.
-    function stop() {
-      if (timer === null) return;
-      clearTimeout(timer);
-      timer = null;
-      elapsed += performance.now() - last;
+    function frame(now) {
+      if (!running) return;
+      var dt = Math.min(now - last, 120);
+      last = now;
+      if (paused || offscreen || document.hidden) {
+        running = false;
+        return;
+      }
+      elapsed += dt;
+      if (elapsed >= duration(index)) advance();
+      requestAnimationFrame(frame);
     }
 
     function start() {
-      if (timer !== null || paused || offscreen || document.hidden) return;
-      if (index < 0) advance();
+      if (running || paused || offscreen || document.hidden) return;
+      running = true;
       last = performance.now();
-      timer = setTimeout(function () {
-        timer = null;
-        advance();
-        start();
-      }, Math.max(0, duration(index) - elapsed));
+      if (index < 0) advance();
+      requestAnimationFrame(frame);
     }
 
     if (toggle) toggle.addEventListener('click', function () { setPaused(!paused); });
@@ -216,14 +215,12 @@
       if (toggle) { toggle.textContent = 'Pause'; toggle.setAttribute('aria-pressed', 'false'); }
       start();
     });
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) stop(); else start();
-    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) start(); });
 
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         offscreen = !entries[0].isIntersecting;
-        if (!offscreen) start(); else stop();
+        if (!offscreen) start(); else running = false;
       }, { threshold: 0.25 }).observe(fig);
     } else {
       offscreen = false;
