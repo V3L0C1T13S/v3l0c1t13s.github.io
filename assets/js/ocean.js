@@ -765,7 +765,10 @@
        Both the live and the capturing frame need the water drawn everywhere, so
        the cover sits those out too. */
     var live = state.depth !== targetDepth();
-    var needCapture = !live && capturedDepth !== state.depth;
+    /* Also capture when the attribute is missing: bouncing between themes can
+       settle back on a depth that was already captured, and the depth check
+       alone would then leave the panels live forever. */
+    var needCapture = !live && (capturedDepth !== state.depth || !root.hasAttribute('data-frost'));
     if (live && root.hasAttribute('data-frost')) root.removeAttribute('data-frost');
     updateCover();
     frameCoverN = (live || needCapture) ? 0 : coverCount;
@@ -1018,7 +1021,10 @@
   render();
   if (reduceMotion) {
     if (window.MutationObserver) {
-      new MutationObserver(render).observe(root, { attributes: true, attributeFilter: ['data-ocean'] });
+      /* There is no animation loop to settle a crossfade, so jump straight to
+         the new depth and let draw() re-capture for the panels. */
+      new MutationObserver(function () { state.depth = targetDepth(); render(); })
+        .observe(root, { attributes: true, attributeFilter: ['data-ocean'] });
     }
   } else {
     start();
