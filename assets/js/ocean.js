@@ -673,6 +673,7 @@
   var COVER_MAX = 8;
   var coverRects = new Float32Array(COVER_MAX * 4);
   var coverCount = 0;
+  var capturing = false;
   function updateCover() {
     var n = 0;
     if (root.dataset.frost === '1') {
@@ -697,7 +698,7 @@
     gl.uniform2f(u.uCss, state.vw, state.vh);
     if (u.uCover) {
       gl.uniform4fv(u.uCover, coverRects);
-      gl.uniform1i(u.uCoverN, coverCount);
+      gl.uniform1i(u.uCoverN, capturing ? 0 : coverCount);
     }
   }
   function fullscreen(u) {
@@ -942,6 +943,12 @@
     if (!state.w || state.depth !== targetDepth()) return;
     if (capturedDepth === state.depth) return;
     capturedDepth = state.depth;
+    /* Draw one frame with the cover switched off first: capturing the normal
+       frame would copy the discarded panel regions too, and the panels paint
+       that capture, so they would show the hole they punched. */
+    capturing = true;
+    draw();
+    capturing = false;
     var w = 160;
     var h = Math.max(1, Math.round(w * state.h / state.w));
     var c = document.createElement('canvas');
