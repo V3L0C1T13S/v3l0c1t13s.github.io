@@ -22,22 +22,15 @@
   nav.hidden = false;
   nav.closest('.post-layout').classList.add('post-layout--sections');
 
-  let positions = [];
-  let active = -1;
-  function measure() {
-    positions = headings.map(heading => heading.getBoundingClientRect().top + window.scrollY);
-    updateCurrent();
-  }
   function updateCurrent() {
     let current = 0;
-    const boundary = window.scrollY + 120;
-    positions.forEach((top, index) => {
-      if (top <= boundary) current = index;
+    headings.forEach((heading, index) => {
+      if (heading.getBoundingClientRect().top <= 120) current = index;
     });
-    if (current === active) return;
-    if (active >= 0) links[active].removeAttribute('aria-current');
-    links[current].setAttribute('aria-current', 'location');
-    active = current;
+    links.forEach((link, index) => {
+      if (index === current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
   }
   let scheduled = false;
   window.addEventListener('scroll', () => {
@@ -45,11 +38,6 @@
     scheduled = true;
     requestAnimationFrame(() => { updateCurrent(); scheduled = false; });
   }, { passive: true });
-  window.addEventListener('resize', measure);
-  window.addEventListener('load', measure);
-  // Images, fonts, and responsive wrapping can move headings after first paint.
-  if ('ResizeObserver' in window) {
-    new ResizeObserver(measure).observe(document.querySelector('.post'));
-  }
-  measure();
+  window.addEventListener('resize', updateCurrent);
+  updateCurrent();
 })();
