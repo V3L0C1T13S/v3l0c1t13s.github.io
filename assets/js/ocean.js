@@ -56,6 +56,18 @@
     'vec2 screenPx() {',
     '  return vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes * uCss;',
     '}',
+    /* Regions fully hidden behind an opaque panel (see updateCover) are skipped
+       before any of the per-pixel work: the panel paints a captured frame there,
+       so shading the live water underneath is wasted. */
+    'uniform vec4 uCover[8];',
+    'uniform int uCoverN;',
+    'void skipCovered() {',
+    '  vec2 sp = screenPx();',
+    '  for (int i = 0; i < 8; i++) {',
+    '    vec4 r = uCover[i];',
+    '    if (i < uCoverN && sp.x >= r.x && sp.x < r.z && sp.y >= r.y && sp.y < r.w) discard;',
+    '  }',
+    '}',
     /* CSS gradients interpolate in premultiplied alpha. */
     'vec4 gmix(vec4 a, vec4 b, float t) {',
     '  vec4 A = vec4(a.rgb * a.a, a.a);',
@@ -93,6 +105,7 @@
     '  return c2;',
     '}',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  float t = sp.y / uCss.y;',
     /* ---- open water ---- */
@@ -153,6 +166,7 @@
     '  return v.w;',
     '}',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  if (sp.x < uClip.x || sp.y < uClip.y || sp.x > uClip.z || sp.y > uClip.w) {',
     '    gl_FragColor = vec4(0.0); return;',
@@ -183,6 +197,7 @@
     '  return uC3;',
     '}',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  vec4 c = grad(length((sp - uC) / uR));',
     '  float a = c.a * uOpacity;',
@@ -206,6 +221,7 @@
     '  return c1;',
     '}',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  float y = sp.y / uCss.y;',
     '  vec4 trad = rd2(length((sp - vec2(0.62, 0.0) * uCss) / (vec2(1.20, 0.58) * uCss)),',
@@ -234,6 +250,7 @@
     '  return c3;',
     '}',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  vec2 dT = (sp - vec2(0.50, 0.30) * uCss) / (vec2(1.15, 0.80) * uCss);',
     '  vec2 dO = (sp - vec2(0.50, 0.26) * uCss) / (vec2(1.20, 0.88) * uCss);',
@@ -252,6 +269,7 @@
     'uniform vec2 uOffset;',
     'uniform float uOpacity;',
     'void main() {',
+    '  skipCovered();',
     '  vec2 sp = screenPx();',
     '  vec4 c = texture2D(uTex, (sp - uOffset) / uTile);',
     '  gl_FragColor = vec4(c.rgb * uOpacity, c.a * uOpacity);',
@@ -385,7 +403,9 @@
       uC1: gl.getUniformLocation(p, 'uC1'),
       uC2: gl.getUniformLocation(p, 'uC2'),
       uC3: gl.getUniformLocation(p, 'uC3'),
-      uTile: gl.getUniformLocation(p, 'uTile')
+      uTile: gl.getUniformLocation(p, 'uTile'),
+      uCover: gl.getUniformLocation(p, 'uCover'),
+      uCoverN: gl.getUniformLocation(p, 'uCoverN')
     };
   });
 
@@ -646,10 +666,39 @@
     return true;
   }
 
+  /* Screen-space rects the water can skip. Only populated once the frost
+     capture exists, because that is what makes the panels opaque enough that
+     the water underneath is never seen. Inset by the panel radius so the
+     rounded corners (which really do show the water) still render. */
+  var COVER_MAX = 8;
+  var coverRects = new Float32Array(COVER_MAX * 4);
+  var coverCount = 0;
+  function updateCover() {
+    var n = 0;
+    if (root.dataset.frost === '1') {
+      var vw = state.vw, vh = state.vh, pad = 16;
+      var nodes = document.querySelectorAll('.card, .import-viz');
+      for (var i = 0; i < nodes.length && n < COVER_MAX; i++) {
+        var r = nodes[i].getBoundingClientRect();
+        var x0 = Math.max(0, r.left + pad), y0 = Math.max(0, r.top + pad);
+        var x1 = Math.min(vw, r.right - pad), y1 = Math.min(vh, r.bottom - pad);
+        if (x1 <= x0 || y1 <= y0) continue;
+        coverRects[n * 4] = x0; coverRects[n * 4 + 1] = y0;
+        coverRects[n * 4 + 2] = x1; coverRects[n * 4 + 3] = y1;
+        n++;
+      }
+    }
+    coverCount = n;
+  }
+
   function bind(prog, u) {
     gl.useProgram(prog);
     gl.uniform2f(u.uRes, state.w, state.h);
     gl.uniform2f(u.uCss, state.vw, state.vh);
+    if (u.uCover) {
+      gl.uniform4fv(u.uCover, coverRects);
+      gl.uniform1i(u.uCoverN, coverCount);
+    }
   }
   function fullscreen(u) {
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
@@ -694,6 +743,7 @@
 
   function draw() {
     if (!state.w || !state.h) return;
+    updateCover();
     var t = state.time;
     var vw = state.vw, vh = state.vh;
     var depth = state.depth;
