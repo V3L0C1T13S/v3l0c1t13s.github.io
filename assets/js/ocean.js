@@ -589,10 +589,10 @@
     }
     render();
   });
-  /* The textures above are decoded asynchronously; make sure one final frame
-     is composited once everything (including late decodes) has settled. */
-  window.addEventListener('load', render);
-
+  /* The textures above are decoded asynchronously; make sure one final frame is
+     composited once everything (including late decodes) has settled, and take
+     the frost capture now that the water is fully drawn. */
+  window.addEventListener('load', function () { capturedDepth = -1; render(); });
   /* Ray shaft profiles: repeating-linear-gradient at 90deg + blur. */
   var RAY_A = { period: 132, blur: 5, stops: [
     [0, 'rgba(0,0,0,0)'], [6, 'rgba(128,224,214,0.065)'],
@@ -878,6 +878,29 @@
     gl.uniform1i(U.grain.uTex, 0);
     overBlend();
     fullscreen(U.grain);
+
+    captureFrost();
+  }
+
+  /* The translucent text panels would otherwise run a live backdrop-filter,
+     re-blurring the animating water every single frame. Instead grab one
+     heavily downsampled frame (scaling it back up is the blur) and expose it
+     as --ocean-frost, so the panels can paint a static, viewport-anchored copy
+     of the water for free. Re-taken only when the depth actually changes. */
+  var capturedDepth = -1;
+  function captureFrost() {
+    if (!state.w || state.depth !== targetDepth()) return;
+    if (capturedDepth === state.depth) return;
+    capturedDepth = state.depth;
+    var w = 160;
+    var h = Math.max(1, Math.round(w * state.h / state.w));
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(canvas, 0, 0, w, h);
+    try {
+      root.style.setProperty('--ocean-frost', 'url("' + c.toDataURL('image/jpeg', 0.82) + '")');
+      root.dataset.frost = '1';
+    } catch (e) {}
   }
 
   function render() { draw(); }

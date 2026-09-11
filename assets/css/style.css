@@ -218,6 +218,22 @@ body {
   box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9);
 }
 
+/* assets/js/ocean.js captures a downsampled frame of the water as --ocean-frost.
+   Once it exists, paint that static copy (anchored to the viewport, exactly how
+   backdrop-filter sampled the fixed canvas) above the panel tint instead of
+   re-blurring the animating water every frame. */
+[data-frost] .card {
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--panel), var(--panel)),
+    var(--ocean-frost);
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%;
+  background-attachment: scroll, fixed;
+  -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+}
+
 .post-list {
   display: grid;
   gap: 1rem;
