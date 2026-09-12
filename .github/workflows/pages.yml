@@ -23,7 +23,9 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler-cache: true
+          # this does NOT work and breaks the site CONSTANTLY because apparently
+          # ruby developers haven't learned how to do incremental builds yet.
+          bundler-cache: false
 
       - uses: actions/configure-pages@v5
         id: pages
