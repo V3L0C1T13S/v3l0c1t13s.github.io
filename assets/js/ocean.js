@@ -6,7 +6,8 @@
  * not an approximation of its look:
  *
  *   - the depth gradients are reproduced stop-for-stop in the shader;
- *   - caustics and grain use the same baked textures the CSS used;
+ *   - caustics use the same baked textures the CSS used;
+ *   - grain is generated per pixel, without a repeating texture tile;
  *   - blurs that CSS applied with filter: blur() are baked into the stripe
  *     profiles with canvas filter, so they match;
  *   - the rotateX/perspective planes are reproduced as homographies derived
@@ -282,16 +283,29 @@
     '}'
   ].join('\n');
 
-  var GRAIN_FS = PRELUDE + '\n' + [
-    'uniform sampler2D uTex;',
-    'uniform vec2 uTile;',
-    'uniform vec2 uOffset;',
+  var GRAIN_VS = '#version 300 es\nin vec2 aPos; void main() { gl_Position = vec4(aPos, 0.0, 1.0); }';
+  var GRAIN_FS = '#version 300 es\n' + PRELUDE + '\n' + [
+    'precision highp int;',
+    'uniform uint uSeed;',
     'uniform float uOpacity;',
+    'out vec4 fragColor;',
+    /* Integer hashing avoids the bands and precision artefacts of sin-based
+       noise. Each pixel and each grain frame get a different input. */
+    'uint hash(uint inputValue) {',
+    '  uint state = inputValue * 747796405u + 2891336453u;',
+    '  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;',
+    '  return (word >> 22u) ^ word;',
+    '}',
     'void main() {',
     '  skipCovered();',
-    '  vec2 sp = screenPx();',
-    '  vec4 c = texture2D(uTex, (sp - uOffset) / uTile);',
-    '  gl_FragColor = vec4(c.rgb * uOpacity, c.a * uOpacity);',
+    '  uvec2 pixel = uvec2(gl_FragCoord.xy);',
+    '  uint bits = hash(pixel.x ^ hash(pixel.y) ^ hash(uSeed));',
+    /* Average two independent halves for softer, film-like grain. Keep the
+       old texture's mean tint and alpha so the ocean retains its brightness. */
+    '  float noise = float((bits & 65535u) + (bits >> 16u)) / 131070.0;',
+    '  float shade = 0.74 + (noise - 0.5) * 0.7;',
+    '  float alpha = uOpacity * 0.5;',
+    '  fragColor = vec4(vec3(shade * alpha), alpha);',
     '}'
   ].join('\n');
 
@@ -393,7 +407,7 @@
     bloom: program(BLOOM_FS),
     haze: program(HAZE_FS),
     vignette: program(VIGNETTE_FS),
-    grain: program(GRAIN_FS),
+    grain: link(GRAIN_VS, GRAIN_FS),
     snow: link(SNOW_VS, SNOW_FS)
   };
   if (!P.water || !P.layer || !P.bloom || !P.haze || !P.vignette || !P.grain || !P.snow) return;
@@ -406,7 +420,7 @@
     bloom: ['uC', 'uR', 'uP', 'uC0', 'uC1', 'uC2', 'uC3', 'uOpacity'],
     haze: ['uDepth', 'uOpacity'],
     vignette: ['uDepth'],
-    grain: ['uTex', 'uTile', 'uOffset', 'uOpacity'],
+    grain: ['uSeed', 'uOpacity'],
     snow: ['uTime', 'uDpr']
   };
   var U = {};
@@ -612,8 +626,6 @@
   var tex = {};
   tex.causticsA = blankTex();
   tex.causticsB = blankTex();
-  tex.grain = blankTex();
-  var grainTile = 160;
 
   var causticsRequested = false;
   function ensureCaustics() {
@@ -636,18 +648,8 @@
     tex.rayB = texFrom(bakeProfile(RAY_B.period, RAY_B.blur, RAY_B.stops), 1, 1, true);
     tex.rayC = texFrom(bakeProfile(RAY_C.period, RAY_C.blur, RAY_C.stops), 1, 1, true);
   }
-  loadImage(IMAGES + 'grain.webp', function (img) {
-    if (img) {
-      grainTile = img.width || 160;
-      gl.deleteTexture(tex.grain);
-      tex.grain = texFrom(img, img.width, img.height, true);
-      capturedDepth = -1;
-    }
-    render();
-  });
-  /* The textures above are decoded asynchronously; make sure one final frame is
-     composited once everything (including late decodes) has settled, and take
-     the frost capture now that the water is fully drawn. */
+  /* Layout may still settle after the first frame. Refresh the frost capture
+     once the page has loaded. Late caustic decodes invalidate it separately. */
   window.addEventListener('load', function () { capturedDepth = -1; render(); });
   /* Ray shaft profiles: repeating-linear-gradient at 90deg + blur. */
   var RAY_A = { period: 132, blur: 5, stops: [
@@ -1018,21 +1020,11 @@
     fullscreen(U.vignette);
 
     /* ---- Grain (both) ---- */
-    var gr = seg(t, 6);
-    var step = Math.floor(gr * 6) / 6;
-    var gx = ((step < 0.25) ? -3 * (step / 0.25)
-          : (step < 0.5) ? -3 + 5 * ((step - 0.25) / 0.25)
-          : (step < 0.75) ? 2 - 4 * ((step - 0.5) / 0.25)
-          : -2 + 2 * ((step - 0.75) / 0.25)) / 100 * (1.08 * vw);
-    var gy = ((step < 0.25) ? 2 * (step / 0.25)
-          : (step < 0.5) ? 2 - 5 * ((step - 0.25) / 0.25)
-          : (step < 0.75) ? -3 + 1 * ((step - 0.5) / 0.25)
-          : -2 + 2 * ((step - 0.75) / 0.25)) / 100 * (1.08 * vh);
     bind(P.grain, U.grain);
-    gl.uniform2f(U.grain.uTile, grainTile, grainTile);
-    gl.uniform2f(U.grain.uOffset, -0.04 * vw + gx, -0.04 * vh + gy);
+    /* Twelve fresh patterns per second, with no loop back to six old offsets.
+       Reduced motion holds time at zero, so its grain remains still. */
+    gl.uniform1ui(U.grain.uSeed, Math.floor(t * 12) >>> 0);
     gl.uniform1f(U.grain.uOpacity, 0.14);
-    gl.bindTexture(gl.TEXTURE_2D, tex.grain);
     overBlend();
     fullscreen(U.grain);
 
