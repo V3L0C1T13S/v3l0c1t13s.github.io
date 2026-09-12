@@ -50,7 +50,7 @@ body {
 /* ============================================================
    Animated background — one WebGL canvas
    ============================================================
-   The whole water column is a single opaque fragment shader
+   The water column is composed in shader passes on one canvas
    (assets/js/ocean.js): depth gradient, caustics, converging shafts,
    columns, blooms, marine snow, haze, vignette and grain. That one
    surface replaces a dozen stacked DOM layers carrying blurs, screen
