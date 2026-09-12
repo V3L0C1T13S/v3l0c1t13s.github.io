@@ -4,6 +4,9 @@
   if (!nav || !headings.length) return;
 
   const list = nav.querySelector('ol');
+  const toggle = nav.querySelector('.post-sections__toggle');
+  const mobile = window.matchMedia('(max-width: 34rem)');
+  let expanded = false;
   const links = headings.map((heading, index) => {
     if (!heading.id) {
       let id = 'post-section-' + (index + 1);
@@ -39,8 +42,23 @@
     links[current].setAttribute('aria-current', 'location');
     active = current;
   }
+  function syncSections() {
+    toggle.hidden = !mobile.matches;
+    list.hidden = mobile.matches && !expanded;
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.querySelector('span').textContent = expanded ? '−' : '+';
+    measure();
+  }
+  toggle.addEventListener('click', () => { expanded = !expanded; syncSections(); });
+  list.addEventListener('click', event => {
+    if (!mobile.matches || !event.target.closest('a')) return;
+    expanded = false;
+    syncSections();
+  });
+  mobile.addEventListener('change', syncSections);
   let scheduled = false;
   window.addEventListener('scroll', () => {
+    if (mobile.matches && list.hidden) return;
     if (scheduled) return;
     scheduled = true;
     requestAnimationFrame(() => { updateCurrent(); scheduled = false; });
@@ -51,5 +69,5 @@
   if ('ResizeObserver' in window) {
     new ResizeObserver(measure).observe(document.querySelector('.post'));
   }
-  measure();
+  syncSections();
 })();

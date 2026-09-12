@@ -241,6 +241,48 @@
   .prose .import-viz figcaption { margin-inline: 1rem; }
 }
 
+@media (max-width: 34rem) {
+  .import-viz__bar { padding-inline: 0.75rem; gap: 0.25rem; }
+  .import-viz__dots {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
+    flex-basis: 100%;
+    gap: 0;
+  }
+  /* Retain the small progress dots inside full-size touch targets. */
+  .import-viz__dot,
+  .import-viz__dot:hover,
+  .import-viz__dot.is-done,
+  .import-viz__dot.is-current {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    background: none;
+    box-shadow: none;
+    transform: none;
+  }
+  .import-viz__dot { color: rgba(120, 245, 207, 0.18); }
+  .import-viz__dot.is-done { color: rgba(120, 245, 207, 0.42); }
+  .import-viz__dot.is-current { color: var(--biolum); }
+  .import-viz__dot::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+  .import-viz__dot.is-current::after { box-shadow: 0 0 10px -1px rgba(120, 245, 207, 0.85); }
+  .import-viz__buttons { gap: 0.5rem; }
+  .import-viz__btn { min-height: 44px; padding-inline: 0.85rem; }
+  .import-viz__status { margin-inline: 0.75rem; min-height: 5.8em; }
+  .import-viz__canvas { padding-inline: 0.75rem; }
+  .prose .import-viz figcaption { margin-inline: 0.75rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .import-viz__bar { display: none !important; }
   .import-viz .iv-dart { display: none; }

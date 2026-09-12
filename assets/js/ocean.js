@@ -709,6 +709,7 @@
   /* ----------------------------------------------------------------- state */
 
   var quality = 1.0;
+  var mobileViewport = window.matchMedia('(max-width: 34rem) and (pointer: coarse)');
   var sizeVersion = 0;
   var state = {
     perfAcc: 0, perfN: 0,
@@ -718,7 +719,9 @@
   };
   function targetDepth() { return root.dataset.ocean === 'twilight' ? 1 : 0; }
   function resize() {
-    var dpr = Math.min(window.devicePixelRatio || 1, 1.75) * quality;
+    /* A decorative background does not need a phone's full display density. */
+    var maxDpr = mobileViewport.matches ? 1.25 : 1.75;
+    var dpr = Math.min(window.devicePixelRatio || 1, maxDpr) * quality;
     var vw = canvas.clientWidth, vh = canvas.clientHeight;
     var w = Math.max(1, Math.round(vw * dpr));
     var h = Math.max(1, Math.round(vh * dpr));
@@ -1087,6 +1090,7 @@
   function stop() { if (state.raf !== null) { cancelAnimationFrame(state.raf); state.raf = null; } }
 
   window.addEventListener('resize', function () { if (resize()) render(); }, { passive: true });
+  mobileViewport.addEventListener('change', function () { if (resize()) render(); });
   var coverRaf = null;
   function invalidateCover() {
     coverDirty = true;
