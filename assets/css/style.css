@@ -525,11 +525,15 @@ body {
 .post-layout { max-width: 50rem; margin-inline: auto; }
 .post-body { min-width: 0; }
 .post-sections {
+  /* Hidden until the server-rendered .post-layout--sections opts a post in.
+     Kept in the box model from first paint so the layout never shifts. */
+  display: none;
   align-self: start;
   padding: 1rem 0;
   font-size: 0.85rem;
   line-height: 1.45;
 }
+.post-layout--sections .post-sections { display: block; }
 .post-sections__title {
   margin: 0 0 0.9rem;
   color: var(--text-faint);
@@ -580,7 +584,7 @@ body {
   .site-main--post { padding-inline: 0.75rem; }
   .post-sections { padding: 0; margin-bottom: 0.75rem; }
   .post-sections__title { display: none; }
-  .post-sections__toggle:not([hidden]) {
+  .post-sections__toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -595,6 +599,8 @@ body {
     cursor: pointer;
   }
   .post-sections__toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
-  .post-sections__list:not([hidden]) { margin-top: 0.5rem; }
+  /* Collapsed list is the default on phones; expanding it is a user action. */
+  .post-sections__list { display: none; }
+  .post-sections--expanded .post-sections__list { display: block; margin-top: 0.5rem; }
   .post-sections a { min-height: 44px; padding-block: 0.75rem; }
 }

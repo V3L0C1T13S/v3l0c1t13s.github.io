@@ -26,12 +26,14 @@
 /* ---- Control bar ------------------------------------------------------- */
 
 .import-viz__bar {
-  display: none;
+  /* Reserved from first paint; JS only flips visibility, never the box. */
+  display: flex;
+  visibility: hidden;
   align-items: center;
   gap: 0.85rem;
   padding: 0 1.3rem 0.2rem;
 }
-.import-viz.is-animated .import-viz__bar { display: flex; }
+.import-viz.is-animated .import-viz__bar { visibility: visible; }
 
 .import-viz__dots { display: flex; gap: 5px; flex: 1 1 auto; }
 .import-viz__dot {
@@ -55,7 +57,9 @@
 /* The step explanation sits under the diagram, where the reader's eye already
    is when a node lands, rather than crowding the controls. */
 .import-viz__status {
-  display: none;
+  /* Reserved from first paint; JS only flips visibility, never the box. */
+  display: block;
+  visibility: hidden;
   margin: 0.85rem 1.3rem 0;
   padding-left: 0.7rem;
   border-left: 2px solid var(--accent);
@@ -64,7 +68,7 @@
   line-height: 1.45;
   color: var(--text);
 }
-.import-viz.is-animated .import-viz__status { display: block; }
+.import-viz.is-animated .import-viz__status { visibility: visible; }
 .import-viz__count {
   display: inline-block;
   margin-right: 0.5rem;
@@ -246,6 +250,8 @@
   .import-viz__dots {
     display: grid;
     grid-template-columns: repeat(5, minmax(44px, 1fr));
+    /* Two rows of touch targets, reserved before JS fills them in. */
+    min-height: 88px;
     flex-basis: 100%;
     gap: 0;
   }

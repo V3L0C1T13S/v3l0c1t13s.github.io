@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#04202f">
   {%- seo -%}
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  {%- if page.fast_imports %}
+  <link rel="stylesheet" href="{{ '/assets/css/fast-imports.css' | relative_url }}">
+  {%- endif %}
   {%- feed_meta -%}
   <script>
     // Set the depth before first paint, otherwise the default flashes on load.

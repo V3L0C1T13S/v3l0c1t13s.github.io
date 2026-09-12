@@ -22,8 +22,6 @@
     list.appendChild(item);
     return link;
   });
-  nav.hidden = false;
-  nav.closest('.post-layout').classList.add('post-layout--sections');
 
   let positions = [];
   let active = -1;
@@ -42,9 +40,10 @@
     links[current].setAttribute('aria-current', 'location');
     active = current;
   }
+  // The nav column and its space are already reserved by the server-rendered
+  // layout class, so this only mirrors the expanded state for mobile.
   function syncSections() {
-    toggle.hidden = !mobile.matches;
-    list.hidden = mobile.matches && !expanded;
+    nav.classList.toggle('post-sections--expanded', expanded);
     toggle.setAttribute('aria-expanded', String(expanded));
     toggle.querySelector('span').textContent = expanded ? '−' : '+';
     measure();
@@ -58,7 +57,7 @@
   mobile.addEventListener('change', syncSections);
   let scheduled = false;
   window.addEventListener('scroll', () => {
-    if (mobile.matches && list.hidden) return;
+    if (mobile.matches && !expanded) return;
     if (scheduled) return;
     scheduled = true;
     requestAnimationFrame(() => { updateCurrent(); scheduled = false; });
