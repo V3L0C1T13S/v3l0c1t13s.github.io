@@ -12,7 +12,7 @@
   <div class="import-viz__canvas" tabindex="0" role="region" aria-label="Call path comparison. Scroll horizontally on small screens.">
   <svg viewBox="0 0 720 442" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="import-viz-title import-viz-desc">
     <title id="import-viz-title">One library call, two ways across</title>
-    <desc id="import-viz-desc">Traditional FEX-style thunks pack arguments into a structure, cross a thunk, unpack on the host, and call the native library. Rosemary's supported fast imports use a compiled ABI conversion to call the native library, then continue in translated code. Flow is schematic, not measured time.</desc>
+    <desc id="import-viz-desc">Traditional FEX-style thunks pack arguments into a structure, cross a thunk, unpack on the host, and call the native library. Microlift's supported fast imports use a compiled ABI conversion to call the native library, then continue in translated code.</desc>
     <defs>
       <marker id="import-arrow-slow" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
         <path d="M1 1L7 4L1 7" fill="none" stroke="var(--iv-slow)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -28,8 +28,8 @@
     <g class="iv-lane iv-traditional">
       <g class="iv-step" data-label="A translated guest call reaches the boundary with its arguments in hand.">
         <g class="iv-head">
-          <text class="iv-label" x="28" y="100">01 / TRADITIONAL LIBRARY THUNKS</text>
-          <text class="iv-small" x="28" y="119">FEX-style pack → cross → unpack</text>
+          <text class="iv-label" x="28" y="100">Library Thunks</text>
+          <text class="iv-small" x="28" y="119">FEX-style pack → cross → unpack.</text>
         </g>
         <g class="iv-box"><rect class="iv-node" x="28" y="140" width="114" height="54" rx="8"/><g class="iv-centered"><text x="85" y="162">Guest call</text><text class="iv-small" x="85" y="180">arguments</text></g></g>
       </g>
@@ -62,7 +62,7 @@
 
     <g class="iv-lane iv-fast">
       <g class="iv-step" data-label="The same call, on the fast path: the guest values are already where the compiler can see them." data-region="178">
-        <g class="iv-head"><path class="iv-divider" d="M28 264H692"/><text class="iv-label" x="28" y="294">02 / ROSEMARY FAST IMPORTS</text></g>
+        <g class="iv-head"><path class="iv-divider" d="M28 264H692"/><text class="iv-label" x="28" y="294">Microlift Fast Imports</text></g>
         <rect class="iv-region" x="20" y="308" width="482" height="74" rx="10"/>
         <g class="iv-box"><rect class="iv-node" x="28" y="318" width="162" height="54" rx="8"/><g class="iv-centered"><text x="109" y="340">Guest values</text><text class="iv-small" x="109" y="358">registers / stack</text></g></g>
       </g>
@@ -87,6 +87,6 @@
 
   <p class="import-viz__status" role="status" aria-live="polite"></p>
 
-  <figcaption id="import-viz-caption">For supported signatures, the ABI conversion is compiled into the translated region. No argument-packing struct or VM dispatch detour. Flow is schematic, not a timing benchmark.</figcaption>
+  <figcaption id="import-viz-caption">For supported signatures, the ABI conversion is compiled into the translated region. No argument-packing struct or VM dispatch detour.</figcaption>
 </figure>
 <script src="{{ '/assets/js/fast-imports.js' | relative_url }}" defer></script>
