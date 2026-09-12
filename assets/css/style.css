@@ -50,7 +50,7 @@ body {
 /* ============================================================
    Animated background — one WebGL canvas
    ============================================================
-   The whole water column is a single opaque fragment shader
+   The water column is composed in shader passes on one canvas
    (assets/js/ocean.js): depth gradient, caustics, converging shafts,
    columns, blooms, marine snow, haze, vignette and grain. That one
    surface replaces a dozen stacked DOM layers carrying blurs, screen
@@ -132,7 +132,9 @@ body {
           backdrop-filter: blur(8px);
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
-.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background: rgba(10, 42, 62, 0.55); }
+/* background-color, not the background shorthand: the shorthand would wipe the
+   captured frost layer these panels carry once [data-frost] is set. */
+.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background-color: rgba(10, 42, 62, 0.55); }
 .depth-toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
 
 .depth-toggle__gauge {
@@ -217,6 +219,32 @@ body {
   -webkit-backdrop-filter: blur(14px) saturate(125%);
   box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9);
 }
+
+/* assets/js/ocean.js captures a downsampled frame of the water as --ocean-frost.
+   Panels then paint that static copy (anchored to the viewport, exactly how
+   backdrop-filter sampled the fixed canvas) over their tint instead of
+   re-blurring the animating water every frame. It also makes them opaque, which
+   lets the water pass skip the area behind them entirely. */
+[data-frost] .card,
+[data-frost] .import-viz,
+[data-frost] .pager__link,
+[data-frost] .depth-toggle {
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--frost-tint), var(--frost-tint)),
+    var(--ocean-frost);
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%;
+  background-attachment: scroll, fixed;
+  -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+}
+[data-frost] .card,
+[data-frost] .import-viz { --frost-tint: var(--panel); }
+[data-frost] .pager__link { --frost-tint: rgba(6, 26, 40, 0.45); }
+[data-frost] .pager__link:hover { --frost-tint: rgba(10, 40, 58, 0.6); }
+[data-frost] .depth-toggle { --frost-tint: rgba(6, 30, 46, 0.4); }
+[data-frost] .depth-toggle:hover { --frost-tint: rgba(10, 42, 62, 0.55); }
 
 .post-list {
   display: grid;
@@ -434,7 +462,7 @@ body {
   border: 1px solid var(--panel-edge);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
-.pager__link:hover { border-color: var(--panel-edge-hi); background: rgba(10, 40, 58, 0.6); }
+.pager__link:hover { border-color: var(--panel-edge-hi); background-color: rgba(10, 40, 58, 0.6); }
 .pager__link--next { text-align: right; }
 .pager__dir { display: block; font-size: 0.76rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
 .pager__title { display: block; margin-top: 0.25rem; font-size: 0.95rem; }
@@ -444,10 +472,49 @@ body {
    ============================================================ */
 @media (max-width: 34rem) {
   body { font-size: 16px; }
-  .card { padding: 1.25rem 1.15rem; }
-  .hero { padding: 2.5rem 0 2rem; }
+  .site-header {
+    padding-top: 0.75rem;
+    padding-inline: 0.75rem;
+    gap: 0;
+    flex-wrap: nowrap;
+  }
+  .brand { min-height: 44px; }
+  .site-nav {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 0;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.4rem 0.25rem;
+    font-size: 0.78rem;
+  }
+  .depth-toggle { min-height: 44px; padding-inline: 0.45rem; font-size: 0.76rem; }
+  .site-main { padding-inline: 0.75rem; padding-bottom: 2.5rem; }
+  .site-footer { padding-inline: 0.75rem; }
+  .card { padding: 1.1rem 1rem; }
+  .hero { padding: 1.5rem 0 1.75rem; }
+  .hero__title { text-align: center; }
+  .card__title { font-size: 1.2rem; }
+  .post__meta { gap: 0.4rem; }
+  .post__meta time { flex-basis: 100%; }
+  .post__meta .dot-sep { display: none; }
+  .tag { font-size: 0.68rem; padding-inline: 0.4rem; }
+  .post__title { font-size: clamp(1.6rem, 7vw, 1.9rem); line-height: 1.18; }
+  .prose pre { padding: 0.85rem; font-size: 0.82rem; }
+  .prose blockquote { padding-left: 0.8rem; }
   .pager { flex-direction: column; }
   .pager__link--next { text-align: left; }
+  /* Touch hover can remain active after a tap. Keep cards still on phones. */
+  .card--link:hover { transform: none; box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9); }
+  .card--link:hover::after { opacity: 0; }
 }
 
 /* Post reading layout and section navigation. */
@@ -458,11 +525,15 @@ body {
 .post-layout { max-width: 50rem; margin-inline: auto; }
 .post-body { min-width: 0; }
 .post-sections {
+  /* Hidden until the server-rendered .post-layout--sections opts a post in.
+     Kept in the box model from first paint so the layout never shifts. */
+  display: none;
   align-self: start;
   padding: 1rem 0;
   font-size: 0.85rem;
   line-height: 1.45;
 }
+.post-layout--sections .post-sections { display: block; }
 .post-sections__title {
   margin: 0 0 0.9rem;
   color: var(--text-faint);
@@ -472,6 +543,7 @@ body {
   text-transform: uppercase;
 }
 .post-sections__list { list-style: none; padding: 0; margin: 0; }
+.post-sections__toggle { display: none; }
 .post-sections a {
   display: block;
   padding: 0.5rem 0.85rem;
@@ -507,4 +579,28 @@ body {
 }
 @media (max-width: 67.999rem) {
   .post-sections { margin-bottom: 1.25rem; }
+}
+@media (max-width: 34rem) {
+  .site-main--post { padding-inline: 0.75rem; }
+  .post-sections { padding: 0; margin-bottom: 0.75rem; }
+  .post-sections__title { display: none; }
+  .post-sections__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+    font: inherit;
+    color: var(--accent-soft);
+    background: rgba(6, 26, 40, 0.65);
+    border: 1px solid var(--panel-edge);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+  }
+  .post-sections__toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+  /* Collapsed list is the default on phones; expanding it is a user action. */
+  .post-sections__list { display: none; }
+  .post-sections--expanded .post-sections__list { display: block; margin-top: 0.5rem; }
+  .post-sections a { min-height: 44px; padding-block: 0.75rem; }
 }

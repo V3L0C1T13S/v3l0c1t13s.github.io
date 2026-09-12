@@ -1,11 +1,20 @@
 ---
 layout: default
 ---
-<div class="post-layout">
-  <nav class="post-sections" aria-label="Post sections" hidden>
+{%- comment -%}
+  Reserve the section-nav column from the first paint. The grid class is decided
+  here, on the server, so the reading column never jumps sideways when the
+  script fills the list in.
+{%- endcomment -%}
+<div class="post-layout{% if content contains '<h2' or content contains '<h3' %} post-layout--sections{% endif %}">
+  <nav class="post-sections" aria-label="Post sections">
     <p class="post-sections__title">On this page</p>
-    <ol class="post-sections__list"></ol>
+    <button class="post-sections__toggle" type="button" aria-expanded="false" aria-controls="post-sections-list">
+      On this page <span aria-hidden="true">+</span>
+    </button>
+    <ol class="post-sections__list" id="post-sections-list"></ol>
   </nav>
+  <noscript><style>.post-sections { display: none !important; }</style></noscript>
   <div class="post-body">
 <article class="post card">
   <header class="post__header">

@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#04202f">
   {%- seo -%}
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  {%- if page.fast_imports %}
+  <link rel="stylesheet" href="{{ '/assets/css/fast-imports.css' | relative_url }}">
+  {%- endif %}
   {%- feed_meta -%}
   <script>
     // Set the depth before first paint, otherwise the default flashes on load.
@@ -18,9 +21,9 @@
 <body>
   <!-- Animated ocean backdrop, drawn in WebGL (assets/js/ocean.js).
 
-       The whole water column is a single opaque fragment shader now: depth
+       The water column is composed in shader passes on one canvas: depth
        gradient, caustics, converging shafts, diffuse columns, blooms, haze,
-       vignette and grain. Marine snow is one small additive point pass. That
+       vignette and grain. Marine snow is one small screen-blended point pass. That
        replaces a dozen blurred, blend-moded, perspective-transformed DOM
        layers plus animated SVG turbulence.
 
