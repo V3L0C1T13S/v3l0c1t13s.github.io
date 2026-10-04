@@ -79,6 +79,12 @@ x + (y - x) * a
 
 On paper, those expressions are equivalent. Floating-point arithmetic has a rather important objection to that word "equivalent," though.
 
+A 32-bit float has a fixed budget of significant binary digits, roughly enough for seven decimal digits. It can represent enormous numbers, but the gaps between the numbers it can represent grow with their magnitude. Near zero, those gaps are tiny. Out in the millions, you can lose an entire small color value between two neighboring floats. Arithmetic rounds intermediate results to fit that budget, so rearranging an equation changes where information can disappear. Algebra assumes we can carry every digit through the calculation; the GPU has rather less space available!
+
+If you've ever traveled absurdly far from the origin in a game and watched the geometry start to jitter, warp, or twist, you've seen [the same precision limit applied to world coordinates](https://docs.godotengine.org/en/stable/tutorials/physics/large_world_coordinates.html). A vertex's small local offset gets combined with a huge position, and the resulting float can no longer distinguish all those fine details. Nearby vertices snap to a coarser grid, and moving the camera can make surfaces wobble. Here, the enormous fog color plays the role of that distant world position, and the model color is the little detail we're trying to preserve.
+
+Floats can also appear to break down over time. Repeated updates can accumulate rounding error, while an ever-growing elapsed-time counter eventually becomes too coarse to represent small time steps reliably. A stored float doesn't deteriorate just because time passes; the trouble comes from the calculations and the scale of the values involved. Our fog blend manages to hit that same limitation in a single calculation.
+
 Take the values from the regression test:
 
 ```c
@@ -93,6 +99,8 @@ At a weight of one, we need the model color, `y`. But a 32-bit float around 3.8 
 y - x          // rounds to -3844675.0f
 x + (y - x)    // becomes 0.0f
 ```
+
+Evaluating the spec's `x * (1 - a) + y * a` as separate operations avoids that loss at this endpoint. With `a = 1`, the enormous `x` is multiplied by zero, while `y` is multiplied by one: `0 + y`. In the NVIDIA form, `y` has already disappeared when `y - x` is rounded. Adding `x` back cancels the large value, but it cannot recover the small value we threw away. The formulas agree in exact arithmetic; their floating-point intermediate results do not.
 
 We asked for a dark color and got black. With other values, we got coarse steps in the color instead. Later rendering passes amplified the damage into that spectacularly deep fried image. In the worst case, every color channel went away and the world models turned black.
 
