@@ -23,6 +23,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+          # Installs and caches gems only; site output is rebuilt below.
           bundler-cache: true
 
       - uses: actions/configure-pages@v5
@@ -32,6 +33,11 @@ jobs:
         env:
           JEKYLL_ENV: production
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+
+      - name: Verify stylesheets before publishing
+        run: |
+          test -s _site/assets/css/style.css
+          test -s _site/assets/css/fast-imports.css
 
       - uses: actions/upload-pages-artifact@v3
 
