@@ -38,6 +38,9 @@ jobs:
         run: |
           test -s _site/assets/css/style.css
           test -s _site/assets/css/fast-imports.css
+          # A theme can generate a nonempty style.css over our own stylesheet.
+          grep -Fq -- '--abyss:' _site/assets/css/style.css
+          grep -Fq '.site-header {' _site/assets/css/style.css
 
       - uses: actions/upload-pages-artifact@v3
 
