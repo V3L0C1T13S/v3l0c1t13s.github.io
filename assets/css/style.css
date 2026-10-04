@@ -112,50 +112,72 @@ body {
 }
 .site-nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
 
-/* ---- Depth toggle ---------------------------------------------------------
-   A little depth gauge: the marker sits high in the column for the shallow
-   view and drops for open water. */
-.depth-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.2rem 0.6rem 0.2rem 0.45rem;
-  font: inherit;
-  font-size: 0.82rem;
-  line-height: 1;
-  color: var(--text-dim);
-  cursor: pointer;
-  background: rgba(6, 30, 46, 0.4);
-  border: 1px solid var(--panel-edge);
-  border-radius: 999px;
-  -webkit-backdrop-filter: blur(8px);
-          backdrop-filter: blur(8px);
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-.depth-toggle:hover { color: var(--text); border-color: var(--panel-edge-hi); background: rgba(10, 42, 62, 0.55); }
-.depth-toggle:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
-
-.depth-toggle__gauge {
+/* ---- Ocean style selector ------------------------------------------------ */
+.depth-switch {
   position: relative;
-  width: 4px;
-  height: 15px;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  padding: 4px;
+  isolation: isolate;
+  background: rgba(2, 18, 29, 0.7);
+  border: 1px solid rgba(127, 227, 221, 0.2);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(150, 226, 246, 0.5), rgba(10, 40, 60, 0.7));
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3), 0 4px 18px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
 }
-.depth-toggle__gauge i {
+.depth-switch::before {
+  content: "";
   position: absolute;
-  left: 50%;
-  width: 6px; height: 6px;
-  margin-left: -3px;
-  border-radius: 50%;
-  background: var(--biolum);
-  box-shadow: 0 0 6px rgba(120, 245, 207, 0.7);
-  transition: top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-  top: 9px;
+  z-index: -1;
+  inset: 4px auto 4px 4px;
+  width: calc((100% - 8px) / 2);
+  border: 1px solid rgba(127, 227, 221, 0.3);
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(71, 169, 173, 0.32), rgba(23, 88, 110, 0.38));
+  box-shadow: inset 0 1px 0 rgba(207, 255, 249, 0.1), 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
 }
-[data-ocean="twilight"] .depth-toggle__gauge i { top: 0; }
-
-.depth-toggle__label { white-space: nowrap; }
+[data-ocean="twilight"] .depth-switch::before {
+  transform: translateX(100%);
+  border-color: rgba(152, 183, 235, 0.35);
+  background: linear-gradient(145deg, rgba(88, 118, 170, 0.35), rgba(33, 52, 92, 0.5));
+}
+.depth-switch__option {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease;
+}
+.depth-switch__option:hover { color: var(--text); }
+.depth-switch__option[aria-pressed="true"] { color: #d4fff5; }
+[data-ocean="twilight"] .depth-switch__option[aria-pressed="true"] { color: #e1eaff; }
+.depth-switch__option:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+.depth-switch__option svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .site-main {
   max-width: var(--maxw);
@@ -444,6 +466,8 @@ body {
    ============================================================ */
 @media (max-width: 34rem) {
   body { font-size: 16px; }
+  .site-nav { flex: 1 1 100%; }
+  .depth-switch { flex-basis: 100%; max-width: 20rem; margin-top: 0.25rem; }
   .card { padding: 1.25rem 1.15rem; }
   .hero { padding: 2.5rem 0 2rem; }
   .pager { flex-direction: column; }
