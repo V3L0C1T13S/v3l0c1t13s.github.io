@@ -1,5 +1,5 @@
 ---
-title: "Rosemary, Nullscape, and a rather expensive rounding error"
+title: "rosemary, nullscape, and a rather expensive rounding error"
 date: 2026-10-02
 tags: [software engineering, rosemary, metal, vulkan, shader translation, roblox]
 art: larkspur
