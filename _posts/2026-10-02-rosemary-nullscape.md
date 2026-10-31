@@ -2,6 +2,7 @@
 title: "Rosemary, Nullscape, and a rather expensive rounding error"
 date: 2026-10-02
 tags: [software engineering, rosemary, metal, vulkan, shader translation, roblox]
+art: larkspur
 ---
 
 In [the last Rosemary post]({% post_url 2026-09-10-rosemary %}), we got to show Roblox running through our Metal to Vulkan translation. An actual game, with actual graphics! Naturally, the next step was to find a game that made those graphics look absolutely awful.

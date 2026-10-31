@@ -1,0 +1,23 @@
+{%- comment -%}
+  Header collage for a post. Pick an arrangement with `art:` in the post's
+  front matter so no two posts share the same one.
+{%- endcomment -%}
+<div class="head-art art-{{ include.art }}" aria-hidden="true">
+{%- case include.art -%}
+{%- when 'ivy' %}
+  {% include cutout.html name="ivy" class="h-ivy" eager=true style="--r:18deg;--z:1" %}
+  {% include cutout.html name="speedwell-label" class="h-label" eager=true style="--r:-6deg;--z:2" %}
+  {% include cutout.html name="speedwell-pod" class="h-pod" eager=true style="--r:-22deg;--z:3" %}
+{%- when 'rosemary' %}
+  {% include cutout.html name="packet-everlasting-peas" class="h-packet" eager=true style="--r:7deg;--z:1" %}
+  {% include cutout.html name="sweet-pea-spray" class="h-spray" eager=true style="--r:-9deg;--z:2" %}
+  {% include cutout.html name="rosemary-sprig" class="h-sprig" eager=true style="--r:-16deg;--z:3" %}
+{%- when 'larkspur' %}
+  {% include cutout.html name="packet-larkspur" class="h-packet" eager=true style="--r:-6deg;--z:2" %}
+  {% include cutout.html name="larkspur-spray" class="h-spray" eager=true style="--r:10deg;--z:1" %}
+  {% include cutout.html name="ticket-scrap" class="h-ticket" eager=true style="--r:-11deg;--z:3" %}
+{%- else %}
+  {% include cutout.html name="speedwell-sketch" class="h-sketch" eager=true style="--r:-8deg;--z:1" %}
+  {% include cutout.html name="speedwell-flower" class="h-flower" eager=true style="--r:14deg;--z:2" %}
+{%- endcase %}
+</div>

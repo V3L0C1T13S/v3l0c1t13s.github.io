@@ -1,0 +1,7 @@
+{%- comment -%}
+  A decorative collage piece from assets/images/collage.
+  {% include cutout.html name="ivy" class="h-ivy" style="--r:12deg;--z:2" eager=true %}
+  Position it with a class, tilt with --r, stack with --z. shadow=false drops the shadow.
+{%- endcomment -%}
+{%- assign cut_size = site.data.collage[include.name] -%}
+<img class="cut{% unless include.shadow == false %} shadow{% endunless %}{% if include.class %} {{ include.class }}{% endif %}" src="{{ '/assets/images/collage/' | append: include.name | append: '.webp' | relative_url }}" alt="" aria-hidden="true" width="{{ cut_size[0] }}" height="{{ cut_size[1] }}" loading="{% if include.eager %}eager{% else %}lazy{% endif %}" decoding="async"{% if include.style %} style="{{ include.style }}"{% endif %}>

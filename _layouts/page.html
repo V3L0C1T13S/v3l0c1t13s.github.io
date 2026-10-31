@@ -1,11 +1,20 @@
 ---
 layout: default
 ---
-<article class="post card">
-  <header class="post__header">
-    <h1 class="post__title">{{ page.title }}</h1>
-  </header>
-  <div class="prose">
-    {{ content }}
+<header class="container page-head">
+  <div class="head-art" aria-hidden="true">
+    {% include cutout.html name="catalog-rose-1892" class="p-catalog" eager=true style="--r:7deg;--z:1" %}
+    {% include cutout.html name="portulaca-blooms" class="p-blooms" eager=true style="--r:-10deg;--z:3" %}
+    {% include cutout.html name="speedwell-leaf" class="p-leaf" eager=true style="--r:-24deg;--z:0" %}
   </div>
-</article>
+  {%- assign heading = page.tiles | default: page.title %}
+  {% include tiles.html as="h1" text=heading seed=1 %}
+</header>
+<div class="container">
+  <div class="lede-wrap page-sheet-wrap">
+    <span class="tape sage" style="top:-12px;left:2rem;--r:-3deg" aria-hidden="true"></span>
+    <article class="sheet page-sheet prose">
+      {{ content }}
+    </article>
+  </div>
+</div>

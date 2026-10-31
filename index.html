@@ -2,26 +2,53 @@
 layout: default
 title: Home
 ---
-<section class="hero">
-  <h1 class="hero__title">{{ site.title }}</h1>
-  <p class="hero__sub">{{ site.description }}</p>
+<section class="home-hero">
+  <div class="patch ground torn-y" aria-hidden="true"></div>
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      {% include tiles.html as="h1" text="velo's / *blog.*" seed=0 %}
+      <div class="lede-wrap">
+        <span class="tape sage" style="top:-12px;left:2rem;--r:-3deg" aria-hidden="true"></span>
+        <div class="lede-sheet sheet">
+          <p class="lede">Heya, I'm Velo. This is where I write about the things I build: compatibility layers, binary translation, and the graphics bugs that come with them.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="#posts">Read the posts</a>
+            <a class="btn" href="{{ '/about/' | relative_url }}">About me</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      {% include cutout.html name="speedwell-plant" class="a-plant" eager=true style="--r:6deg;--z:1" %}
+      {% include cutout.html name="packet-marigold-wildfire" class="a-packet" eager=true style="--r:-8deg;--z:2" %}
+      {% include cutout.html name="marigold-blooms" class="a-blooms" eager=true style="--r:12deg;--z:4" %}
+      {% include cutout.html name="ticket-scrap" class="a-ticket" eager=true style="--r:9deg;--z:0" %}
+      <span class="tape" style="top:56%;left:30%;--r:28deg;z-index:5"></span>
+    </div>
+  </div>
 </section>
 
-<section class="post-list">
-  {%- for post in site.posts %}
-  <a class="card card--link" href="{{ post.url | relative_url }}">
-    <p class="post__meta">
-      <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %-d, %Y" }}</time>
-      {%- if post.tags and post.tags != empty %}
-      <span class="dot-sep"></span>
-      {%- for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor -%}
-      {%- endif %}
-    </p>
-    <h2 class="card__title">{{ post.title }}</h2>
-    <p class="card__excerpt">{{ post.excerpt | strip_html | truncate: 180 }}</p>
-    <span class="card__more">Read More</span>
-  </a>
-  {%- else %}
-  <p class="empty">No posts yet?</p>
-  {%- endfor %}
+<section class="container posts" id="posts" aria-labelledby="posts-title">
+  <div class="posts-head">
+    {% include tiles.html as="h2" text="latest *posts.*" seed=4 %}
+    <p class="hand posts-note">newest first ✿</p>
+  </div>
+  <div class="board ground torn-y">
+    {%- assign card_tilts = "-1.4,1,-.6,.8,-1.1,1.5" | split: "," %}
+    <div class="grid-2 post-grid">
+      {%- for post in site.posts %}
+      {%- assign k = forloop.index0 | modulo: 6 %}
+      <a class="note-card" href="{{ post.url | relative_url }}" style="--r:{{ card_tilts[k] }}deg">
+        <span class="tape{% cycle '', ' sage' %}" style="top:-14px;left:{% cycle '30', '48', '38' %}%;--r:{% cycle '-4', '4' %}deg" aria-hidden="true"></span>
+        <span class="no">no. {{ forloop.rindex | prepend: '0' | slice: -2, 2 }}</span>
+        <time class="card-date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %-d, %Y" }}</time>
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.excerpt | strip_html | normalize_whitespace | truncate: 170 }}</p>
+        <span class="card-more">Read the post →</span>
+      </a>
+      {%- else %}
+      <p class="note-card">No posts yet?</p>
+      {%- endfor %}
+    </div>
+  </div>
 </section>

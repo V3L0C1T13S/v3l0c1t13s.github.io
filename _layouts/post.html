@@ -1,45 +1,44 @@
 ---
 layout: default
 ---
-<div class="post-layout">
-  <nav class="post-sections" aria-label="Post sections" hidden>
+<header class="container page-head post-head">
+  {% include post-art.html art=page.art %}
+  <p class="slip post-date" style="--r:-2deg"><time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time></p>
+  {% include tiles.html as="h1" text=page.title seed=page.date.day escape=true class="post-title" %}
+  {%- if page.tags and page.tags != empty %}
+  <ul class="post-tags" aria-label="Tags">
+    {%- for tag in page.tags %}<li class="slip" style="--r:{% cycle '-1.5', '1', '-.5', '1.6', '-1' %}deg">{{ tag }}</li>{% endfor %}
+  </ul>
+  {%- endif %}
+</header>
+
+<div class="container post-layout">
+  <nav class="post-sections note-card" aria-label="Post sections" hidden>
+    <span class="no">contents</span>
     <p class="post-sections__title">On this page</p>
     <ol class="post-sections__list"></ol>
   </nav>
   <div class="post-body">
-<article class="post card">
-  <header class="post__header">
-    <p class="post__meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
-      {%- if page.tags and page.tags != empty %}
-      <span class="dot-sep"></span>
-      {%- for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor -%}
+    <article class="post sheet">
+      <div class="prose">
+        {{ content }}
+      </div>
+    </article>
+
+    <nav class="pager" aria-label="More posts">
+      {%- if page.previous %}
+      <a class="pager__link note-card" style="--r:-1deg" href="{{ page.previous.url | relative_url }}">
+        <span class="no">← previous</span>
+        <span class="pager__title">{{ page.previous.title }}</span>
+      </a>
       {%- endif %}
-    </p>
-    <h1 class="post__title">{{ page.title }}</h1>
-    {%- if page.excerpt_text %}<p class="post__lede">{{ page.excerpt_text }}</p>{% endif %}
-  </header>
-
-  <div class="prose">
-    {{ content }}
-  </div>
-</article>
-
-<nav class="pager">
-  {%- if page.previous %}
-  <a class="pager__link" href="{{ page.previous.url | relative_url }}">
-    <span class="pager__dir">← Previous</span>
-    <span class="pager__title">{{ page.previous.title }}</span>
-  </a>
-  {%- endif %}
-  {%- if page.next %}
-  <a class="pager__link pager__link--next" href="{{ page.next.url | relative_url }}">
-    <span class="pager__dir">Next →</span>
-    <span class="pager__title">{{ page.next.title }}</span>
-  </a>
-  {%- endif %}
-</nav>
-
+      {%- if page.next %}
+      <a class="pager__link pager__link--next note-card" style="--r:.8deg" href="{{ page.next.url | relative_url }}">
+        <span class="no">next →</span>
+        <span class="pager__title">{{ page.next.title }}</span>
+      </a>
+      {%- endif %}
+    </nav>
   </div>
 </div>
 <script src="{{ '/assets/js/post-sections.js' | relative_url }}" defer></script>
