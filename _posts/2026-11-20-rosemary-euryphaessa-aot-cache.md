@@ -2,7 +2,7 @@
 title: "building an aot cache for rosemary, and microlift's origins in bin2bin hardening"
 date: 2026-11-20
 tags: [software engineering, rosemary, microlift, recompilation, obfuscation, bin2bin, jit, caching]
-art: ivy
+art: larkspur
 ---
 
 Cold start is expensive for a recompiler. The first time you launch something the size of Roblox through Rosemary, the emulator has to lift and compile a large amount of x86-64 before a single frame appears. That used to take around two minutes, in that amount of time you could get up and make yourself a coffee while Rosemary was busy lowering all the CLIF instructions, or, if you're British, start the kettle.
